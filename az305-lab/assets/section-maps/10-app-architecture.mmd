@@ -1,0 +1,91 @@
+graph LR
+    %% Event Sources
+    subgraph Sources["Event Sources"]
+        ExtApp["External<br/>Application"]
+        BlobEvent["Blob Storage<br/>Event"]
+        UserAction["User<br/>Action"]
+    end
+
+    %% Event Grid
+    subgraph EGrid["Event Grid"]
+        EGTopic["Custom Topic<br/>certlab-egt"]
+        EGSub["Event<br/>Subscription"]
+    end
+
+    %% Event Hubs
+    subgraph EHubs["Event Hubs · Standard"]
+        EHNamespace["Namespace<br/>certlab-ehn"]
+        EventHub["Event Hub<br/>2 Partitions"]
+        ConsGroup["Consumer Group<br/>certlab-consumer"]
+    end
+
+    %% Service Bus
+    subgraph SBus["Service Bus · Standard"]
+        SBNamespace["Namespace<br/>certlab-sbn"]
+        SBQueue["Queue<br/>Dead-Letter Enabled"]
+        SBTopic["Topic<br/>Pub/Sub"]
+        SBSub["Subscription<br/>Max 10 Deliveries"]
+    end
+
+    %% API Management
+    APIM["API Management<br/>Consumption Tier"]
+
+    %% Cache
+    Redis["Redis Cache<br/>Basic C0 · 250 MB"]
+
+    %% Consumers
+    subgraph Consumers["Consumers"]
+        FuncApp["Function App"]
+        WebApp["Web App"]
+        Webhook["Webhook<br/>Endpoint"]
+    end
+
+    %% Event flow
+    ExtApp --> EGTopic
+    BlobEvent --> EGTopic
+    EGTopic --> EGSub
+    EGSub --> Webhook
+
+    UserAction --> EHNamespace
+    EHNamespace --> EventHub
+    EventHub --> ConsGroup
+    ConsGroup --> FuncApp
+
+    %% Service Bus messaging
+    WebApp -.->|"enqueue"| SBQueue
+    SBQueue -.->|"dequeue"| FuncApp
+    WebApp -.->|"publish"| SBTopic
+    SBTopic --> SBSub
+    SBSub -.->|"receive"| FuncApp
+
+    %% API Gateway pattern
+    APIM -->|"route"| WebApp
+
+    %% Cache-aside pattern
+    WebApp <-->|"cache-aside"| Redis
+
+    %% Diagnostics
+    LAW["Log Analytics"]
+
+    EHNamespace -.->|logs| LAW
+    SBNamespace -.->|logs| LAW
+    APIM -.->|logs| LAW
+
+    %% Styles
+    classDef source fill:#64748b,color:#fff,stroke:#475569
+    classDef egrid fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef ehub fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef sbus fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef apim fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef cache fill:#16a34a,color:#fff,stroke:#15803d
+    classDef consumer fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef diag fill:#475569,color:#fff,stroke:#334155
+
+    class ExtApp,BlobEvent,UserAction source
+    class EGTopic,EGSub egrid
+    class EHNamespace,EventHub,ConsGroup ehub
+    class SBNamespace,SBQueue,SBTopic,SBSub sbus
+    class APIM apim
+    class Redis cache
+    class FuncApp,WebApp,Webhook consumer
+    class LAW diag

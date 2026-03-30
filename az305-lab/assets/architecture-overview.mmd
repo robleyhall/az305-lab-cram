@@ -1,0 +1,205 @@
+graph TB
+    %% ── Module 00: Foundation ──────────────────────────────────
+    subgraph M00["Module 00 · Foundation"]
+        VNet["VNet<br/>10.0.0.0/16"]
+        LAW["Log Analytics<br/>Workspace"]
+        NSG["Default NSG"]
+    end
+
+    %% ── Module 01: Governance ──────────────────────────────────
+    subgraph M01["Module 01 · Governance"]
+        Policy["Azure Policy<br/>Definitions"]
+        RBAC["Custom RBAC<br/>Role"]
+        MG["Management<br/>Group"]
+        Lock["Resource Lock<br/>CanNotDelete"]
+    end
+
+    %% ── Module 02: Identity ────────────────────────────────────
+    subgraph M02["Module 02 · Identity"]
+        EntraGroups["Entra ID<br/>Groups"]
+        AppReg["App Registration<br/>& Service Principal"]
+        ManagedId02["User-Assigned<br/>Managed Identity"]
+    end
+
+    %% ── Module 03: Key Vault ───────────────────────────────────
+    subgraph M03["Module 03 · Key Vault"]
+        KV["Key Vault<br/>RBAC-Enabled"]
+        KVSecret["Secret<br/>db-connection-string"]
+        KVKey["Key<br/>RSA-2048"]
+        KVCert["Certificate<br/>TLS Self-Signed"]
+        KVPE["Private Endpoint"]
+    end
+
+    %% ── Module 04: Monitoring ──────────────────────────────────
+    subgraph M04["Module 04 · Monitoring"]
+        AppIns["Application<br/>Insights"]
+        Alerts["Metric & Log<br/>Alerts"]
+        ActionGrp["Action Group<br/>Email"]
+        Dashboard["Portal<br/>Dashboard"]
+    end
+
+    %% ── Module 05: HA / DR ─────────────────────────────────────
+    subgraph M05["Module 05 · HA & DR"]
+        AVSet["Availability Set<br/>2 VMs"]
+        AZVM["Availability Zone<br/>VM"]
+        PubLB["Public Load<br/>Balancer"]
+        IntLB["Internal Load<br/>Balancer"]
+        RSV["Recovery Services<br/>Vault"]
+        TM["Traffic Manager"]
+    end
+
+    %% ── Module 06: Storage ─────────────────────────────────────
+    subgraph M06["Module 06 · Storage"]
+        GPv2["Storage GPv2<br/>GRS"]
+        PremBlob["Premium Block<br/>Blob"]
+        ADLS06["Data Lake<br/>Gen2"]
+        ManagedDisk["Managed Disks<br/>Std + Premium"]
+        StorPE["Private Endpoint"]
+    end
+
+    %% ── Module 07: Databases ───────────────────────────────────
+    subgraph M07["Module 07 · Databases"]
+        SQLSrv["SQL Server"]
+        SQLBasic["SQL DB<br/>Basic DTU"]
+        SQLSless["SQL DB<br/>Serverless"]
+        ElasticPool["Elastic Pool"]
+        Cosmos["Cosmos DB<br/>SQL API"]
+        SQLPE["Private Endpoint"]
+    end
+
+    %% ── Module 08: Data Integration ────────────────────────────
+    subgraph M08["Module 08 · Data Integration"]
+        ADF["Data Factory"]
+        Pipeline["Pipeline &<br/>Activities"]
+        DLBronze["Bronze Layer"]
+        DLSilver["Silver Layer"]
+        DLGold["Gold Layer"]
+        EGTopic08["Event Grid<br/>System Topic"]
+    end
+
+    %% ── Module 09: Compute ─────────────────────────────────────
+    subgraph M09["Module 09 · Compute"]
+        VM["Linux VM<br/>IaaS"]
+        AppSvc["App Service<br/>PaaS"]
+        ACI["Container<br/>Instance"]
+        ACR["Container<br/>Registry"]
+        FuncApp["Function App<br/>Serverless"]
+        Batch["Batch Account<br/>HPC"]
+    end
+
+    %% ── Module 10: App Architecture ────────────────────────────
+    subgraph M10["Module 10 · App Architecture"]
+        EGTopic["Event Grid<br/>Custom Topic"]
+        EH["Event Hubs<br/>Namespace"]
+        SBus["Service Bus<br/>Queue + Topic"]
+        APIM["API Management<br/>Consumption"]
+        Redis["Redis Cache<br/>Basic C0"]
+    end
+
+    %% ── Module 11: Networking ──────────────────────────────────
+    subgraph M11["Module 11 · Networking"]
+        Spoke["Spoke VNet<br/>10.1.0.0/16"]
+        WebNSG["Web NSG<br/>HTTP/HTTPS"]
+        ASG["Application<br/>Security Group"]
+        UDR["Route Table<br/>UDR"]
+        PrivDNS["Private DNS<br/>Zone"]
+    end
+
+    %% ── Module 12: Migration ───────────────────────────────────
+    subgraph M12["Module 12 · Migration"]
+        Migrate["Azure Migrate<br/>Assessment"]
+        ASR["Azure Site<br/>Recovery"]
+        DMS["Database<br/>Migration Service"]
+    end
+
+    %% ── Cross-Module Connections ───────────────────────────────
+
+    %% Foundation → all modules (diagnostic settings)
+    VNet --> KVPE
+    VNet --> StorPE
+    VNet --> SQLPE
+    VNet --> AVSet
+    VNet --> AZVM
+    VNet --> VM
+
+    LAW -.->|diagnostic logs| KV
+    LAW -.->|diagnostic logs| SQLSrv
+    LAW -.->|diagnostic logs| Cosmos
+    LAW -.->|diagnostic logs| ADF
+    LAW -.->|diagnostic logs| EH
+    LAW -.->|diagnostic logs| SBus
+    LAW -.->|diagnostic logs| APIM
+    LAW -.->|diagnostic logs| WebNSG
+    LAW -.->|workspace| AppIns
+
+    %% HA/DR load balancer → VMs
+    PubLB --> AVSet
+    IntLB --> AVSet
+    PubLB --> AZVM
+    RSV -.->|backup| AVSet
+
+    %% Networking peering
+    VNet <-->|"VNet Peering"| Spoke
+
+    %% Data Integration flow
+    ADF --> Pipeline
+    Pipeline --> DLBronze
+    DLBronze --> DLSilver
+    DLSilver --> DLGold
+    EGTopic08 -.->|trigger| Pipeline
+
+    %% Database relationships
+    SQLSrv --> SQLBasic
+    SQLSrv --> SQLSless
+    SQLSrv --> ElasticPool
+
+    %% Governance scope
+    Policy -.->|assigned| MG
+    RBAC -.->|assigned| MG
+
+    %% Identity → resources
+    ManagedId02 -.->|access| KV
+
+    %% Compute → registry
+    ACR -.->|pull image| ACI
+
+    %% App Architecture messaging flow
+    EGTopic -.->|events| EH
+    EH -.->|stream| FuncApp
+    SBus -.->|dequeue| AppSvc
+    APIM -.->|route| AppSvc
+    Redis -.->|cache| AppSvc
+
+    %% Key Vault → Private Endpoint → VNet
+    KVPE --> VNet
+    StorPE --> VNet
+    SQLPE --> VNet
+
+    %% Styles
+    classDef foundation fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef governance fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef identity fill:#db2777,color:#fff,stroke:#be185d
+    classDef keyvault fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef monitoring fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef hadr fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef storage fill:#16a34a,color:#fff,stroke:#15803d
+    classDef database fill:#9333ea,color:#fff,stroke:#7e22ce
+    classDef dataintegration fill:#ca8a04,color:#fff,stroke:#a16207
+    classDef compute fill:#0284c7,color:#fff,stroke:#0369a1
+    classDef apparch fill:#e11d48,color:#fff,stroke:#be123c
+    classDef networking fill:#059669,color:#fff,stroke:#047857
+    classDef migration fill:#64748b,color:#fff,stroke:#475569
+
+    class VNet,LAW,NSG foundation
+    class Policy,RBAC,MG,Lock governance
+    class EntraGroups,AppReg,ManagedId02 identity
+    class KV,KVSecret,KVKey,KVCert,KVPE keyvault
+    class AppIns,Alerts,ActionGrp,Dashboard monitoring
+    class AVSet,AZVM,PubLB,IntLB,RSV,TM hadr
+    class GPv2,PremBlob,ADLS06,ManagedDisk,StorPE storage
+    class SQLSrv,SQLBasic,SQLSless,ElasticPool,Cosmos,SQLPE database
+    class ADF,Pipeline,DLBronze,DLSilver,DLGold,EGTopic08 dataintegration
+    class VM,AppSvc,ACI,ACR,FuncApp,Batch compute
+    class EGTopic,EH,SBus,APIM,Redis apparch
+    class Spoke,WebNSG,ASG,UDR,PrivDNS networking
+    class Migrate,ASR,DMS migration

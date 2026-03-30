@@ -1,0 +1,39 @@
+# =============================================================================
+# AZ-305 Lab — Module 10: Application Architecture — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Terraform automatically loads terraform.tfvars when present.
+# =============================================================================
+
+# Azure region — pick the region closest to you that supports all services.
+# Common choices: "eastus", "westus2", "westeurope", "northeurope", "australiaeast"
+location = "eastus"
+
+# Naming prefix — applied to every resource name for easy identification.
+# Keep it short (6-10 chars) to stay within Azure name-length limits.
+prefix = "certlab"
+
+# --- Values from Module 00 outputs (run `terraform output` in 00-foundation) ---
+
+# foundation_resource_group_name = "certlab-foundation-rg-abc123"
+# log_analytics_workspace_id     = "/subscriptions/.../workspaces/certlab-law-abc123"
+
+# --- API Management settings ---
+
+# Publisher name displayed in the APIM developer portal.
+apim_publisher_name = "AZ-305 Lab"
+
+# Publisher email for APIM notifications. Replace with your actual email.
+apim_publisher_email = "admin@example.com"
+
+# Tags — override or extend the defaults. These are merged with module-level
+# tags so you can add your own without losing the built-in labels.
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

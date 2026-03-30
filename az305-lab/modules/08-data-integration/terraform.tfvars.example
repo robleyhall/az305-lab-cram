@@ -1,0 +1,32 @@
+# =============================================================================
+# AZ-305 Lab — Module 08: Data Integration — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+# =============================================================================
+
+location = "eastus"
+prefix   = "certlab"
+
+# Required: provide the foundation resource group name from Module 00.
+# Run `terraform -chdir=../00-foundation output resource_group_name` to get it.
+foundation_resource_group_name = "certlab-foundation-rg"
+
+# Required: VNet ID from Module 00.
+# Run `terraform -chdir=../00-foundation output vnet_id` to get it.
+vnet_id = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg/providers/Microsoft.Network/virtualNetworks/certlab-vnet-SUFFIX"
+
+# Required: Subnet ID for the data-integration subnet (10.0.8.0/24).
+# Run `terraform -chdir=../00-foundation output subnet_ids` and pick "data-integration".
+data_integration_subnet_id = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg/providers/Microsoft.Network/virtualNetworks/certlab-vnet-SUFFIX/subnets/data-integration"
+
+# Required: Log Analytics workspace ID from Module 00.
+# Run `terraform -chdir=../00-foundation output log_analytics_workspace_id` to get it.
+log_analytics_workspace_id = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg/providers/Microsoft.OperationalInsights/workspaces/certlab-law-SUFFIX"
+
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+}

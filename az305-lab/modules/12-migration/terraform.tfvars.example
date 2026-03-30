@@ -1,0 +1,40 @@
+# =============================================================================
+# Module 12 — Migration — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Terraform automatically loads terraform.tfvars when present.
+# =============================================================================
+
+# Azure region (must match foundation module)
+location = "eastus"
+
+# Naming prefix for all resources
+prefix = "certlab"
+
+# Foundation resource group (from Module 00)
+foundation_resource_group_name = "certlab-foundation-rg"
+
+# VNet and subnet IDs from foundation module
+# Replace with actual IDs from: terraform -chdir=../00-foundation output
+vnet_id              = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg/providers/Microsoft.Network/virtualNetworks/certlab-vnet-SUFFIX"
+migration_subnet_id  = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg/providers/Microsoft.Network/virtualNetworks/certlab-vnet-SUFFIX/subnets/migration"
+
+# Log Analytics workspace ID from foundation/monitoring module
+log_analytics_workspace_id = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg/providers/Microsoft.OperationalInsights/workspaces/certlab-law-SUFFIX"
+
+# Optional: provide your own SSH public key (leave empty to auto-generate)
+# admin_ssh_public_key = "ssh-rsa AAAA..."
+
+# Auto-shutdown time for VMs (HHMM format, UTC)
+auto_shutdown_time = "2200"
+
+# Tags applied to every resource
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

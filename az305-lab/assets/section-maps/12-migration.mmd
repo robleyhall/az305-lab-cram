@@ -1,0 +1,63 @@
+graph LR
+    %% On-Premises Environment
+    subgraph OnPrem["On-Premises Environment"]
+        VMs["Virtual Machines"]
+        DBs["SQL Databases"]
+        FileData["File / Bulk Data"]
+        WebApps["Web Applications"]
+    end
+
+    %% Assessment
+    subgraph Assessment["Azure Migrate · Assessment"]
+        Discovery["Discovery &<br/>Assessment"]
+        Dependency["Dependency<br/>Mapping"]
+        TCO["TCO & Sizing<br/>Recommendations"]
+    end
+
+    %% Migration Paths
+    subgraph Paths["Migration Paths"]
+        ASR["Azure Site Recovery<br/>VM Replication"]
+        DMS["Database Migration<br/>Service"]
+        DataBox["Azure Data Box<br/>Bulk Transfer"]
+        AppMigrate["App Service<br/>Migration Assistant"]
+    end
+
+    %% Azure Targets
+    subgraph Azure["Azure Landing Zone"]
+        AzureVMs["Azure VMs"]
+        AzureSQL["Azure SQL<br/>Database"]
+        AzureStorage["Azure Storage<br/>Blob / ADLS"]
+        AzureAppSvc["Azure App<br/>Service"]
+    end
+
+    %% Assessment flow
+    VMs --> Discovery
+    DBs --> Discovery
+    FileData --> Discovery
+    WebApps --> Discovery
+
+    Discovery --> Dependency
+    Discovery --> TCO
+
+    %% Migration paths
+    TCO --> ASR
+    TCO --> DMS
+    TCO --> DataBox
+    TCO --> AppMigrate
+
+    %% Path → Target
+    ASR -->|"replicate & failover"| AzureVMs
+    DMS -->|"online / offline"| AzureSQL
+    DataBox -->|"ship & import"| AzureStorage
+    AppMigrate -->|"containerize or PaaS"| AzureAppSvc
+
+    %% Styles
+    classDef onprem fill:#64748b,color:#fff,stroke:#475569
+    classDef assess fill:#ca8a04,color:#fff,stroke:#a16207
+    classDef path fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef azure fill:#2563eb,color:#fff,stroke:#1d4ed8
+
+    class VMs,DBs,FileData,WebApps onprem
+    class Discovery,Dependency,TCO assess
+    class ASR,DMS,DataBox,AppMigrate path
+    class AzureVMs,AzureSQL,AzureStorage,AzureAppSvc azure

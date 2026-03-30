@@ -1,0 +1,74 @@
+graph TB
+    %% Decision tree header
+    Decision{"Compute<br/>Decision Tree"}
+
+    %% IaaS
+    subgraph IaaS["IaaS · Full Control"]
+        VM["Linux VM<br/>Standard_B1s · Ubuntu<br/>SSH Key Auth"]
+        BootDiag["Boot Diagnostics<br/>Storage Account"]
+    end
+
+    %% PaaS
+    subgraph PaaS["PaaS · Managed Platform"]
+        ASP["App Service Plan<br/>Linux B1"]
+        WebApp["Web App<br/>Node.js 20 LTS"]
+    end
+
+    %% Containers
+    subgraph Containers["Containers"]
+        ACR["Container Registry<br/>Basic Tier"]
+        ACI["Container Instance<br/>nginx · Serverless"]
+    end
+
+    %% Serverless
+    subgraph Serverless["Serverless"]
+        FuncASP["Function Plan<br/>Consumption Y1"]
+        FuncApp["Function App<br/>Python 3.11"]
+        FuncInsights["Application Insights"]
+        FuncStorage["Function Storage<br/>Account"]
+    end
+
+    %% HPC
+    subgraph HPC["HPC · Batch Processing"]
+        BatchAcc["Batch Account"]
+        BatchStorage["Batch Auto-Storage"]
+    end
+
+    %% Decision tree branches
+    Decision -->|"Full OS Control"| IaaS
+    Decision -->|"Managed Web Hosting"| PaaS
+    Decision -->|"Containerized Workload"| Containers
+    Decision -->|"Event-Driven Code"| Serverless
+    Decision -->|"Large-Scale Parallel"| HPC
+
+    %% Internal connections
+    VM --> BootDiag
+    ASP --> WebApp
+    ACR -.->|"pull image"| ACI
+    FuncASP --> FuncApp
+    FuncApp --> FuncInsights
+    FuncApp --> FuncStorage
+    BatchAcc --> BatchStorage
+
+    %% Network
+    VNet["Foundation VNet<br/>Compute Subnet"]
+
+    VNet --> VM
+    VNet --> WebApp
+
+    %% Styles
+    classDef decision fill:#64748b,color:#fff,stroke:#475569
+    classDef iaas fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef paas fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef container fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef serverless fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef hpc fill:#ca8a04,color:#fff,stroke:#a16207
+    classDef net fill:#059669,color:#fff,stroke:#047857
+
+    class Decision decision
+    class VM,BootDiag iaas
+    class ASP,WebApp paas
+    class ACR,ACI container
+    class FuncASP,FuncApp,FuncInsights,FuncStorage serverless
+    class BatchAcc,BatchStorage hpc
+    class VNet net

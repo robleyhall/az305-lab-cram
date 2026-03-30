@@ -1,0 +1,29 @@
+# =============================================================================
+# AZ-305 Lab — Module 04: Monitoring & Alerting — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Terraform automatically loads terraform.tfvars when present.
+# =============================================================================
+
+location = "eastus"
+prefix   = "certlab"
+
+# --- Foundation Module Dependencies ---
+# Get these values from Module 00 outputs:
+#   cd ../00-foundation && terraform output
+foundation_resource_group_name = "certlab-foundation-rg-abc123"
+log_analytics_workspace_id     = "/subscriptions/YOUR-SUB-ID/resourceGroups/certlab-foundation-rg-abc123/providers/Microsoft.OperationalInsights/workspaces/certlab-law-abc123"
+
+# --- Alert Configuration ---
+alert_email = "admin@example.com"
+
+# --- Tags ---
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

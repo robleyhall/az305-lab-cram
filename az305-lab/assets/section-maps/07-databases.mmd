@@ -1,0 +1,64 @@
+graph TB
+    %% SQL Server
+    subgraph SQLPlatform["Azure SQL Server"]
+        SQLSrv["SQL Server<br/>certlab-sqlserver"]
+        SQLBasic["SQL Database<br/>Basic · 5 DTU · 2 GB"]
+        SQLSless["SQL Database<br/>Serverless vCore<br/>Auto-Pause 60 min"]
+        ElasticPool["Elastic Pool<br/>BasicPool · 50 eDTU"]
+        Audit["Extended Auditing<br/>Settings"]
+    end
+
+    SQLSrv --> SQLBasic
+    SQLSrv --> SQLSless
+    SQLSrv --> ElasticPool
+    SQLSrv --> Audit
+
+    %% Firewall
+    subgraph FW["Firewall Rules"]
+        FWAzure["Allow Azure<br/>Services"]
+        FWClient["Allow Client IP"]
+    end
+
+    SQLSrv --> FW
+
+    %% Cosmos DB
+    subgraph CosmosPlatform["Cosmos DB · SQL API · Serverless"]
+        CosmosAcc["Database Account<br/>Session Consistency"]
+        CosmosDB["Database<br/>certlab-cosmosdb"]
+        Container["Container<br/>items · /category"]
+    end
+
+    CosmosAcc --> CosmosDB
+    CosmosDB --> Container
+
+    %% Private Endpoints
+    SQLPE["Private Endpoint<br/>certlab-sql-pe"]
+    SQLPDZ["Private DNS Zone<br/>privatelink.database.windows.net"]
+
+    %% Network
+    VNet["Foundation VNet<br/>Database Subnet"]
+
+    %% Diagnostics
+    LAW["Log Analytics<br/>Workspace"]
+
+    %% Connections
+    SQLPE --> SQLSrv
+    SQLPE --- SQLPDZ
+    SQLPDZ --> VNet
+
+    %% Diagnostics
+    SQLSrv -.->|"audit logs"| LAW
+    CosmosAcc -.->|"diagnostic logs"| LAW
+
+    %% Styles
+    classDef sql fill:#9333ea,color:#fff,stroke:#7e22ce
+    classDef cosmos fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef fw fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef network fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef diag fill:#0891b2,color:#fff,stroke:#0e7490
+
+    class SQLSrv,SQLBasic,SQLSless,ElasticPool,Audit sql
+    class CosmosAcc,CosmosDB,Container cosmos
+    class FWAzure,FWClient fw
+    class SQLPE,SQLPDZ,VNet network
+    class LAW diag

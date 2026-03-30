@@ -1,0 +1,30 @@
+# =============================================================================
+# AZ-305 Lab — Module 00: Foundation — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Terraform automatically loads terraform.tfvars when present.
+# =============================================================================
+
+# Azure region — pick the region closest to you that supports Availability Zones.
+# Common choices: "eastus", "westus2", "westeurope", "northeurope", "australiaeast"
+location = "eastus"
+
+# Naming prefix — applied to every resource name for easy identification.
+# Keep it short (6-10 chars) to stay within Azure name-length limits.
+prefix = "certlab"
+
+# Environment label — used in tags. Change to "dev" or "staging" if reusing
+# this module outside the cert-study context.
+environment = "lab"
+
+# Tags — override or extend the defaults. These are merged with module-level
+# tags so you can add your own without losing the built-in labels.
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

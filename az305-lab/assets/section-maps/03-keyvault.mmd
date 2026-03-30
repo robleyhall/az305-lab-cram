@@ -1,0 +1,69 @@
+graph TB
+    %% Key Vault and its contents
+    subgraph KVault["Key Vault · RBAC-Enabled"]
+        Secret["Secret<br/>db-connection-string"]
+        Key["Key<br/>RSA-2048 Encryption"]
+        Cert["Certificate<br/>TLS Self-Signed"]
+    end
+
+    %% Managed Identity
+    ManagedId["User-Assigned<br/>Managed Identity"]
+
+    %% RBAC Assignments
+    subgraph RBACRoles["RBAC Role Assignments"]
+        R1["Key Vault Administrator<br/>→ Deploying User"]
+        R2["Key Vault Secrets User<br/>→ Managed Identity"]
+        R3["Key Vault Crypto User<br/>→ Managed Identity"]
+    end
+
+    %% Networking
+    subgraph Networking["Private Network Access"]
+        PE["Private Endpoint<br/>certlab-kv-pe"]
+        PDZ["Private DNS Zone<br/>privatelink.vaultcore.azure.net"]
+        VNetLink["VNet Link"]
+    end
+
+    VNet["Foundation VNet<br/>10.0.0.0/16"]
+    Subnet["Keyvault Subnet"]
+
+    %% Diagnostics
+    LAW["Log Analytics<br/>Workspace"]
+
+    %% Application (consumer)
+    App["Application<br/>Workload"]
+
+    %% Connections
+    R1 --> KVault
+    R2 --> Secret
+    R3 --> Key
+
+    ManagedId --> R2
+    ManagedId --> R3
+    App -.->|"uses identity"| ManagedId
+    ManagedId -.->|"reads secrets & keys"| KVault
+
+    %% Network path
+    PE --> KVault
+    PE --- PDZ
+    PDZ --- VNetLink
+    VNetLink --> VNet
+    VNet --> Subnet
+    Subnet --> PE
+
+    %% Diagnostics
+    KVault -.->|"audit logs"| LAW
+
+    %% Styles
+    classDef vault fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef identity fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef rbac fill:#16a34a,color:#fff,stroke:#15803d
+    classDef network fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef diag fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef app fill:#64748b,color:#fff,stroke:#475569
+
+    class Secret,Key,Cert vault
+    class ManagedId identity
+    class R1,R2,R3 rbac
+    class PE,PDZ,VNetLink,VNet,Subnet network
+    class LAW diag
+    class App app
