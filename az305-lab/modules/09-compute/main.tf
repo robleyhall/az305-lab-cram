@@ -278,7 +278,7 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "vm" {
 
 resource "azurerm_service_plan" "webapp" {
   name                = "${var.prefix}-asp"
-  location            = azurerm_resource_group.compute.location
+  location            = var.appservice_location
   resource_group_name = azurerm_resource_group.compute.name
   os_type             = "Linux"
   sku_name            = "F1"
@@ -289,7 +289,7 @@ resource "azurerm_service_plan" "webapp" {
 
 resource "azurerm_linux_web_app" "main" {
   name                = "${var.prefix}-webapp-${random_string.suffix.result}"
-  location            = azurerm_resource_group.compute.location
+  location            = var.appservice_location
   resource_group_name = azurerm_resource_group.compute.name
   service_plan_id     = azurerm_service_plan.webapp.id
   https_only          = true
@@ -300,7 +300,7 @@ resource "azurerm_linux_web_app" "main" {
   }
 
   site_config {
-    always_on = true # Supported on Basic (B1) and above
+    always_on = false # F1 tier does not support always_on
 
     application_stack {
       node_version = "20-lts"
@@ -537,11 +537,19 @@ resource "azurerm_application_insights" "func" {
 }
 
 # --- Consumption Plan (Y1) ---
+# Requires a separate resource group when deployed to a different region
+# than the main compute RG (Dynamic SKU + Linux Worker constraint).
+
+resource "azurerm_resource_group" "func" {
+  name     = "${var.prefix}-func-rg"
+  location = var.appservice_location
+  tags     = local.common_tags
+}
 
 resource "azurerm_service_plan" "func" {
   name                = "${var.prefix}-func-asp"
-  location            = azurerm_resource_group.compute.location
-  resource_group_name = azurerm_resource_group.compute.name
+  location            = var.appservice_location
+  resource_group_name = azurerm_resource_group.func.name
   os_type             = "Linux"
   sku_name            = "Y1"
   tags                = local.common_tags
@@ -550,13 +558,13 @@ resource "azurerm_service_plan" "func" {
 # --- Function App (Python 3.11 on Consumption) ---
 
 resource "azurerm_linux_function_app" "main" {
-  name                       = "${var.prefix}-func-${random_string.suffix.result}"
-  location                   = azurerm_resource_group.compute.location
-  resource_group_name        = azurerm_resource_group.compute.name
-  service_plan_id            = azurerm_service_plan.func.id
-  storage_account_name       = azurerm_storage_account.func.name
-  storage_account_access_key = azurerm_storage_account.func.primary_access_key
-  tags                       = local.common_tags
+  name                          = "${var.prefix}-func-${random_string.suffix.result}"
+  location                      = var.appservice_location
+  resource_group_name           = azurerm_resource_group.func.name
+  service_plan_id               = azurerm_service_plan.func.id
+  storage_account_name          = azurerm_storage_account.func.name
+  storage_uses_managed_identity = true
+  tags                          = local.common_tags
 
   identity {
     type = "SystemAssigned"
@@ -578,6 +586,19 @@ resource "azurerm_linux_function_app" "main" {
     "ENABLE_ORYX_BUILD"              = "true"
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "1"
   }
+}
+
+# Grant the function app's managed identity access to its storage account
+resource "azurerm_role_assignment" "func_storage_blob" {
+  scope                = azurerm_storage_account.func.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "func_storage_file" {
+  scope                = azurerm_storage_account.func.id
+  role_definition_name = "Storage File Data Privileged Contributor"
+  principal_id         = azurerm_linux_function_app.main.identity[0].principal_id
 }
 
 # =============================================================================

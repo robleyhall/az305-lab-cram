@@ -20,6 +20,12 @@ variable "vm_size" {
   description = "VM size for lab VMs. Override if B-series is unavailable in your subscription/region."
 }
 
+variable "appservice_location" {
+  type        = string
+  default     = "eastus"
+  description = "Region for App Service and Function App. Override if App Service quota is unavailable in primary region."
+}
+
 variable "foundation_resource_group_name" {
   type        = string
   description = "Name of the foundation resource group from module 00. Used as a data source reference."
