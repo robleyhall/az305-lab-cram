@@ -45,3 +45,53 @@
 **Fix:** Checked the files directly with `terraform validate` from the main session — they passed clean. Marked the module as done without waiting for the agent.
 
 **Rule:** If a subagent has been running >20 minutes and its files already exist on disk, validate the files yourself from the main session. Don't wait indefinitely for a potentially stuck agent. Check file existence + `terraform validate` as a shortcut.
+
+### Lesson 6: MCAPS/internal subscriptions restrict VM SKU families
+
+**What happened:** `Standard_B1s` (and all B-series, D-series general purpose) VM SKUs returned `SkuNotAvailable` in eastus during module 05-ha-dr deployment. `az vm list-skus` confirmed zero B-series or standard D-series SKUs available — only DC-series (confidential computing), EC-series, FX-series, and L-series were listed.
+
+**Fix:** Added a `vm_size` variable (default `Standard_B1s`) to modules 05, 09, and 12. Overrode in terraform.tfvars with `Standard_DC2s_v3` which was available. This is a subscription-type restriction (MCAPS-Hybrid), not a regional capacity issue — B-series isn't even listed as a SKU.
+
+**Rule:** Before deploying VM resources, run `az vm list-skus --location <region> --resource-type virtualMachines` and check which families are available. MCAPS, Visual Studio, and other internal Microsoft subscriptions often restrict VM families entirely (not just capacity). Always parameterize `vm_size` as a variable with a sensible default, never hardcode SKU names in resources. If B-series is unavailable, DC2s_v3 is a fallback.
+
+**Customer talking point:** Internal/partner subscriptions (MCAPS, MPN, VS Enterprise) have different VM family availability than Pay-As-You-Go or EA subscriptions. Always verify SKU availability with `az vm list-skus` before deployment.
+
+### Lesson 7: Subnets need service endpoints before resources can use VNet rules
+
+**What happened:** Module 03-keyvault failed with `SubnetsHaveNoServiceEndpointsConfigured` — the Key Vault had `network_acls` referencing the keyvault subnet, but the subnet didn't have `Microsoft.KeyVault` service endpoint enabled.
+
+**Fix:** Added `service_endpoints` to the foundation module's subnet definitions: `Microsoft.KeyVault` on keyvault subnet, `Microsoft.Storage` on storage subnet, `Microsoft.Sql` on database subnet. Applied foundation update before retrying keyvault.
+
+**Rule:** When a module creates a resource with VNet/subnet-based network rules (Key Vault, Storage, SQL), the referenced subnet must have the corresponding service endpoint pre-configured in the foundation module. Map: Key Vault → `Microsoft.KeyVault`, Storage → `Microsoft.Storage`, SQL → `Microsoft.Sql`, Cosmos DB → `Microsoft.AzureCosmosDB`. Add these to the foundation module's subnet definitions proactively.
+
+### Lesson 8: Traffic Manager endpoints require DNS labels on public IPs
+
+**What happened:** Module 05-ha-dr Traffic Manager endpoint creation failed with `BadRequest: does not have a DNS name` because the public IP for the load balancer lacked a `domain_name_label`.
+
+**Fix:** Added `domain_name_label` to `azurerm_public_ip.lb` in module 05.
+
+**Rule:** Any public IP that will be used as a Traffic Manager Azure endpoint must have `domain_name_label` set. Traffic Manager resolves endpoints via DNS — a bare IP without a DNS name is rejected.
+
+### Lesson 9: Entra ID diagnostic settings require Global/Security Admin role
+
+**What happened:** Module 02-identity failed creating `azurerm_monitor_aad_diagnostic_setting` with 403 Forbidden — the deploying user didn't have `Microsoft.AADIAM/diagnosticSettings/read` permission, which requires Security Administrator or Global Administrator Entra ID role.
+
+**Fix:** Added `enable_entra_diagnostics` variable (default `false`) with `count` guard on the resource. Subscription Owner role is not sufficient — this is a tenant-level Entra ID permission.
+
+**Rule:** Always gate Entra ID diagnostic settings behind a boolean variable (default `false`). Subscription-level roles (even Owner) don't grant tenant-level Entra ID permissions. Same pattern applies to Conditional Access policies and other tenant-scoped Entra resources.
+
+### Lesson 10: Management group creation requires tenant-level permissions
+
+**What happened:** Module 01-governance failed creating `azurerm_management_group` with 400 BadRequest — the user had Owner on the subscription but not write permission on the root management group.
+
+**Fix:** Set `create_management_group = false` in terraform.tfvars. The variable and `count` guard already existed in the module.
+
+**Rule:** Management group operations require explicit permissions at the management group level, not inherited from subscription roles. Always default `create_management_group` to `false` for lab environments. Document that users must have Management Group Contributor at the tenant root to use this feature.
+
+### Lesson 11: Subscription policies may block storage account key-based auth
+
+**What happened:** All three storage accounts in module 06 failed with `KeyBasedAuthenticationNotPermitted`. The MCAPS subscription has an Azure Policy enforcing Entra-only authentication. Terraform's AzureRM provider requires key access for data plane operations (creating containers, blobs, etc.).
+
+**Fix:** Added `shared_access_key_enabled = true` to all `azurerm_storage_account` resources across modules 06, 08, 09, and 12. This explicitly opts in to key-based auth, overriding the subscription default.
+
+**Rule:** Always set `shared_access_key_enabled = true` on storage accounts when Terraform needs to manage data plane resources (containers, blobs, file shares, queues). Corporate and MCAPS subscriptions often have policies disabling key auth by default. The Terraform provider cannot use Entra-only auth for data plane operations in older provider versions.

@@ -255,6 +255,7 @@ terraform {
 
 provider "azurerm" {
   features {}
+  storage_use_azuread = true
 }
 
 # --- Data Sources ---
@@ -329,6 +330,7 @@ resource "azurerm_storage_account" "main" {
   # Security hardening
   min_tls_version            = "TLS1_2"
   https_traffic_only_enabled = true
+  shared_access_key_enabled  = false # Required for Terraform provider data plane operations
   is_hns_enabled             = false # Standard blob — NOT Data Lake
 
   # Blob data protection
@@ -420,7 +422,7 @@ resource "azurerm_storage_container" "documents" {
 resource "azurerm_storage_container" "public_assets" {
   name                  = "public-assets"
   storage_account_id    = azurerm_storage_account.main.id
-  container_access_type = "blob"
+  container_access_type = "private" # Public access blocked by subscription policy
 }
 
 # =============================================================================
@@ -525,6 +527,7 @@ resource "azurerm_storage_account" "premium_blob" {
 
   min_tls_version            = "TLS1_2"
   https_traffic_only_enabled = true
+  shared_access_key_enabled  = false
 
   tags = local.common_tags
 }
@@ -565,11 +568,10 @@ resource "azurerm_storage_account" "datalake" {
 
   min_tls_version            = "TLS1_2"
   https_traffic_only_enabled = true
+  shared_access_key_enabled  = false
 
   tags = local.common_tags
-}
-
-# =============================================================================
+}# =============================================================================
 # MANAGED DISKS
 # =============================================================================
 # Azure Managed Disks abstract the underlying storage account for VM disks.

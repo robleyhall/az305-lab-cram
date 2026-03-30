@@ -133,24 +133,19 @@ resource "azurerm_resource_group" "databases" {
 # ---------------------------------------------------------------------------
 
 resource "azurerm_mssql_server" "main" {
-  name                         = "${var.prefix}-sqlserver-${random_string.suffix.result}"
-  resource_group_name          = azurerm_resource_group.databases.name
-  location                     = azurerm_resource_group.databases.location
-  version                      = "12.0"
-  administrator_login          = var.sql_admin_username
-  administrator_login_password = random_password.sql_admin.result
-  tags                         = local.common_tags
+  name                          = "${var.prefix}-sqlserver-${random_string.suffix.result}"
+  resource_group_name           = azurerm_resource_group.databases.name
+  location                      = azurerm_resource_group.databases.location
+  version                       = "12.0"
+  public_network_access_enabled = false
+  tags                          = local.common_tags
 
-  # Minimum TLS 1.2 — required for compliance and security best practices.
-  # AZ-305 may test which TLS versions are acceptable (answer: 1.2+).
   minimum_tls_version = "1.2"
 
-  # Azure AD administrator — enables Azure AD authentication alongside SQL auth.
-  # In production, consider azuread_authentication_only = true to eliminate
-  # SQL passwords entirely (Azure AD-only authentication).
   azuread_administrator {
-    login_username = "AzureAD Admin"
-    object_id      = data.azurerm_client_config.current.object_id
+    login_username              = "AzureAD Admin"
+    object_id                   = data.azurerm_client_config.current.object_id
+    azuread_authentication_only = true
   }
 }
 
@@ -289,7 +284,7 @@ resource "azurerm_mssql_elasticpool" "main" {
   resource_group_name = azurerm_resource_group.databases.name
   location            = azurerm_resource_group.databases.location
   server_name         = azurerm_mssql_server.main.name
-  max_size_gb         = 5
+  max_size_gb         = 4.8828125
   tags                = local.common_tags
 
   # BasicPool: 50 eDTUs shared across databases in the pool.
@@ -334,20 +329,21 @@ resource "azurerm_mssql_elasticpool" "main" {
 # Allow Azure services — required for Azure-to-Azure connectivity
 # (e.g., App Service, Azure Functions, Data Factory connecting to SQL).
 # The special IP range 0.0.0.0 to 0.0.0.0 signals "allow Azure services".
-resource "azurerm_mssql_firewall_rule" "allow_azure_services" {
-  name             = "AllowAzureServices"
-  server_id        = azurerm_mssql_server.main.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
-}
+# Firewall rules disabled — public_network_access is off (MCAPS policy).
+# Access is only through private endpoint.
+# resource "azurerm_mssql_firewall_rule" "allow_azure_services" {
+#   name             = "AllowAzureServices"
+#   server_id        = azurerm_mssql_server.main.id
+#   start_ip_address = "0.0.0.0"
+#   end_ip_address   = "0.0.0.0"
+# }
 
-# Allow the lab user's client IP for direct connectivity (SSMS, Azure Data Studio).
-resource "azurerm_mssql_firewall_rule" "allow_client_ip" {
-  name             = "AllowLabClientIP"
-  server_id        = azurerm_mssql_server.main.id
-  start_ip_address = var.allowed_client_ip
-  end_ip_address   = var.allowed_client_ip
-}
+# resource "azurerm_mssql_firewall_rule" "allow_client_ip" {
+#   name             = "AllowLabClientIP"
+#   server_id        = azurerm_mssql_server.main.id
+#   start_ip_address = var.allowed_client_ip
+#   end_ip_address   = var.allowed_client_ip
+# }
 
 # =============================================================================
 # PRIVATE ENDPOINT FOR SQL SERVER
@@ -526,6 +522,7 @@ resource "azurerm_cosmosdb_account" "main" {
   geo_location {
     location          = azurerm_resource_group.databases.location
     failover_priority = 0
+    zone_redundant    = false
   }
 
   # Serverless capacity mode — pay only for RUs consumed per request.

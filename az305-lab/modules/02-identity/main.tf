@@ -440,6 +440,8 @@ resource "azuread_conditional_access_policy" "require_mfa_admins" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_aad_diagnostic_setting" "entra_logs" {
+  count = var.enable_entra_diagnostics ? 1 : 0
+
   name                       = "${var.prefix}-entra-diag"
   log_analytics_workspace_id = var.log_analytics_workspace_id
 

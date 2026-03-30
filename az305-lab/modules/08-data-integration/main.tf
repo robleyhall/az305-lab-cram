@@ -34,6 +34,7 @@ terraform {
 
 provider "azurerm" {
   features {}
+  storage_use_azuread = true
 }
 
 # =============================================================================
@@ -228,8 +229,8 @@ resource "azurerm_storage_account" "datalake" {
   # ABFSS driver, and efficient directory-level operations.
   is_hns_enabled = true
 
-  # Allow public blob access disabled — Data Lake is not for public files.
   allow_nested_items_to_be_public = false
+  shared_access_key_enabled       = false
 
   tags = local.common_tags
 }

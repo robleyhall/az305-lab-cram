@@ -94,21 +94,21 @@ resource "azurerm_eventgrid_topic" "main" {
 }
 
 # Event Grid subscription — demonstrates event routing to a webhook endpoint.
-# In production, replace the placeholder URL with an Azure Function, Logic App,
-# or any HTTPS endpoint that can handle the validation handshake.
-resource "azurerm_eventgrid_event_subscription" "main" {
-  name  = "${var.prefix}-egt-sub"
-  scope = azurerm_eventgrid_topic.main.id
-
-  webhook_endpoint {
-    url = "https://example.com/api/events"
-  }
-
-  retry_policy {
-    max_delivery_attempts = 30
-    event_time_to_live    = 1440
-  }
-}
+# Disabled by default: requires a real endpoint that handles validation handshake.
+# In production, replace the placeholder URL and set deploy_eventgrid_subscription = true.
+# resource "azurerm_eventgrid_event_subscription" "main" {
+#   name  = "${var.prefix}-egt-sub"
+#   scope = azurerm_eventgrid_topic.main.id
+#
+#   webhook_endpoint {
+#     url = "https://your-function-app.azurewebsites.net/api/events"
+#   }
+#
+#   retry_policy {
+#     max_delivery_attempts = 30
+#     event_time_to_live    = 1440
+#   }
+# }
 
 # =============================================================================
 # EVENT HUBS

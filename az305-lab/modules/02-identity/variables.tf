@@ -30,6 +30,12 @@ variable "enable_conditional_access" {
   description = "Deploy Conditional Access policies. Requires Entra ID P1+ licensing. Set to true only if your tenant has P1 or P2."
 }
 
+variable "enable_entra_diagnostics" {
+  type        = bool
+  default     = false
+  description = "Deploy Entra ID diagnostic settings. Requires Security Administrator or Global Administrator Entra ID role."
+}
+
 variable "tags" {
   type        = map(string)
   description = "Default tags applied to every resource. Module-specific tags are merged on top."

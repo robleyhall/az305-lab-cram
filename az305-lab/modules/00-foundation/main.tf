@@ -110,6 +110,7 @@ resource "azurerm_subnet" "keyvault" {
   resource_group_name  = azurerm_resource_group.foundation.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.3.0/24"]
+  service_endpoints    = ["Microsoft.KeyVault"]
 }
 
 # Monitoring module — Azure Monitor, alerts, diagnostic settings
@@ -134,6 +135,7 @@ resource "azurerm_subnet" "storage" {
   resource_group_name  = azurerm_resource_group.foundation.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.6.0/24"]
+  service_endpoints    = ["Microsoft.Storage"]
 }
 
 # Database module — SQL, Cosmos DB, MySQL, PostgreSQL
@@ -142,6 +144,7 @@ resource "azurerm_subnet" "database" {
   resource_group_name  = azurerm_resource_group.foundation.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.7.0/24"]
+  service_endpoints    = ["Microsoft.Sql"]
 }
 
 # Data Integration module — Data Factory, Event Hub, Service Bus

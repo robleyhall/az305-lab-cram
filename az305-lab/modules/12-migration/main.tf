@@ -107,6 +107,7 @@ provider "azurerm" {
       recover_soft_deleted_backup_protected_vm = true
     }
   }
+  storage_use_azuread = true
 }
 
 provider "azapi" {}
@@ -172,9 +173,9 @@ resource "azurerm_resource_group" "migration" {
 # =============================================================================
 
 resource "azapi_resource" "migrate_project" {
-  type      = "Microsoft.Migrate/migrateProjects@2023-01-01"
+  type      = "Microsoft.Migrate/migrateProjects@2020-05-01"
   name      = "${var.prefix}-migrate-${local.suffix}"
-  location  = var.location
+  location  = "centralus" # eastus not supported for Migrate projects
   parent_id = azurerm_resource_group.migration.id
 
   body = {
@@ -330,6 +331,7 @@ resource "azurerm_storage_account" "migration_staging" {
   resource_group_name      = azurerm_resource_group.migration.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
+  shared_access_key_enabled = false
 
   # Blob versioning helps track migration data changes
   blob_properties {
@@ -405,7 +407,7 @@ resource "azurerm_linux_virtual_machine" "onprem_sim" {
   name                = "${var.prefix}-onprem-sim-${local.suffix}"
   location            = azurerm_resource_group.migration.location
   resource_group_name = azurerm_resource_group.migration.name
-  size                = "Standard_B1s"
+  size                = var.vm_size
 
   admin_username                  = "azureuser"
   disable_password_authentication = true
@@ -495,6 +497,6 @@ resource "azurerm_monitor_diagnostic_setting" "rsv" {
   }
 
   enabled_metric {
-    category = "Health"
+    category = "AllMetrics"
   }
 }

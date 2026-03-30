@@ -187,7 +187,7 @@ resource "azurerm_network_interface" "az_vm" {
 # VMs IN AVAILABILITY SET
 # =============================================================================
 # Two VMs spread across fault domains and update domains within the avset.
-# Standard_B1s is the cheapest burstable VM (1 vCPU, 1 GiB RAM).
+# Standard_DC2s_v3 used when B-series unavailable (MCAPS subscription constraint).
 # Auto-shutdown at 22:00 UTC keeps lab costs low.
 # =============================================================================
 
@@ -196,7 +196,7 @@ resource "azurerm_linux_virtual_machine" "avset_vm" {
   name                = "${var.prefix}-avset-vm-${count.index}-${local.suffix}"
   location            = azurerm_resource_group.hadr.location
   resource_group_name = azurerm_resource_group.hadr.name
-  size                = "Standard_B1s"
+  size                = var.vm_size
   availability_set_id = azurerm_availability_set.main.id
   # NOTE: No `zone` parameter — Availability Set and Zone are mutually exclusive!
 
@@ -261,7 +261,7 @@ resource "azurerm_linux_virtual_machine" "az_vm" {
   name                = "${var.prefix}-az-vm-${local.suffix}"
   location            = azurerm_resource_group.hadr.location
   resource_group_name = azurerm_resource_group.hadr.name
-  size                = "Standard_B1s"
+  size                = var.vm_size
   zone                = "1"
   # NOTE: No `availability_set_id` — Zone and Availability Set are mutually exclusive!
 
@@ -339,6 +339,7 @@ resource "azurerm_public_ip" "lb" {
   resource_group_name = azurerm_resource_group.hadr.name
   allocation_method   = "Static"
   sku                 = "Standard" # Required for Standard LB
+  domain_name_label   = "${var.prefix}-pub-lb-${local.suffix}"
 
   tags = local.common_tags
 }

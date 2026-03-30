@@ -54,6 +54,7 @@ terraform {
 
 provider "azurerm" {
   features {}
+  storage_use_azuread = true
 }
 
 # --- Data Sources — reference resources from module 00-foundation ---
@@ -165,6 +166,7 @@ resource "azurerm_storage_account" "bootdiag" {
   resource_group_name      = azurerm_resource_group.compute.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
+  shared_access_key_enabled = false
   tags                     = local.common_tags
 }
 
@@ -174,7 +176,7 @@ resource "azurerm_linux_virtual_machine" "main" {
   name                = "${var.prefix}-vm-linux"
   location            = azurerm_resource_group.compute.location
   resource_group_name = azurerm_resource_group.compute.name
-  size                = "Standard_B1s"
+  size                = var.vm_size
   admin_username      = "azureadmin"
   tags                = local.common_tags
 
@@ -517,6 +519,7 @@ resource "azurerm_storage_account" "func" {
   resource_group_name      = azurerm_resource_group.compute.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
+  shared_access_key_enabled = false
   tags                     = local.common_tags
 }
 
@@ -630,6 +633,7 @@ resource "azurerm_storage_account" "batch" {
   resource_group_name      = azurerm_resource_group.compute.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
+  shared_access_key_enabled = false
   tags                     = local.common_tags
 }
 

@@ -14,6 +14,12 @@ variable "prefix" {
   description = "Naming prefix for all resources. Keeps lab resources easily identifiable."
 }
 
+variable "vm_size" {
+  type        = string
+  default     = "Standard_B1s"
+  description = "VM size for lab VMs. Override if B-series is unavailable in your subscription/region."
+}
+
 variable "foundation_resource_group_name" {
   type        = string
   description = "Name of the foundation resource group from module 00. Used as a data source reference."
