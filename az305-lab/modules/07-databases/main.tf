@@ -137,7 +137,7 @@ resource "azurerm_mssql_server" "main" {
   resource_group_name           = azurerm_resource_group.databases.name
   location                      = azurerm_resource_group.databases.location
   version                       = "12.0"
-  public_network_access_enabled = false
+  public_network_access_enabled = true # No private endpoint in cross-region deployment
   tags                          = local.common_tags
 
   minimum_tls_version = "1.2"
@@ -370,43 +370,44 @@ resource "azurerm_mssql_elasticpool" "main" {
 # configuring the private endpoint to ensure all traffic is private.
 # ---------------------------------------------------------------------------
 
-# Private DNS Zone for SQL Server
-resource "azurerm_private_dns_zone" "sql" {
-  name                = "privatelink.database.windows.net"
-  resource_group_name = azurerm_resource_group.databases.name
-  tags                = local.common_tags
-}
+# Private endpoint resources disabled — module deployed to eastus2 while
+# foundation VNet is in eastus. Private endpoints require same-region subnet.
+# Uncomment when deploying in same region as foundation.
 
-# Link the private DNS zone to the VNet for name resolution.
-resource "azurerm_private_dns_zone_virtual_network_link" "sql" {
-  name                  = "${var.prefix}-sql-dns-link"
-  resource_group_name   = azurerm_resource_group.databases.name
-  private_dns_zone_name = azurerm_private_dns_zone.sql.name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-  tags                  = local.common_tags
-}
+# resource "azurerm_private_dns_zone" "sql" {
+#   name                = "privatelink.database.windows.net"
+#   resource_group_name = azurerm_resource_group.databases.name
+#   tags                = local.common_tags
+# }
 
-# The private endpoint — creates a NIC in the database subnet.
-resource "azurerm_private_endpoint" "sql" {
-  name                = "${var.prefix}-sql-pe-${random_string.suffix.result}"
-  resource_group_name = azurerm_resource_group.databases.name
-  location            = azurerm_resource_group.databases.location
-  subnet_id           = var.database_subnet_id
-  tags                = local.common_tags
+# resource "azurerm_private_dns_zone_virtual_network_link" "sql" {
+#   name                  = "${var.prefix}-sql-dns-link"
+#   resource_group_name   = azurerm_resource_group.databases.name
+#   private_dns_zone_name = azurerm_private_dns_zone.sql.name
+#   virtual_network_id    = var.vnet_id
+#   registration_enabled  = false
+#   tags                  = local.common_tags
+# }
 
-  private_service_connection {
-    name                           = "${var.prefix}-sql-psc"
-    private_connection_resource_id = azurerm_mssql_server.main.id
-    subresource_names              = ["sqlServer"]
-    is_manual_connection           = false
-  }
-
-  private_dns_zone_group {
-    name                 = "sql-dns-group"
-    private_dns_zone_ids = [azurerm_private_dns_zone.sql.id]
-  }
-}
+# resource "azurerm_private_endpoint" "sql" {
+#   name                = "${var.prefix}-sql-pe-${random_string.suffix.result}"
+#   resource_group_name = azurerm_resource_group.databases.name
+#   location            = azurerm_resource_group.databases.location
+#   subnet_id           = var.database_subnet_id
+#   tags                = local.common_tags
+#
+#   private_service_connection {
+#     name                           = "${var.prefix}-sql-psc"
+#     private_connection_resource_id = azurerm_mssql_server.main.id
+#     subresource_names              = ["sqlServer"]
+#     is_manual_connection           = false
+#   }
+#
+#   private_dns_zone_group {
+#     name                 = "sql-dns-group"
+#     private_dns_zone_ids = [azurerm_private_dns_zone.sql.id]
+#   }
+# }
 
 # =============================================================================
 # AZURE COSMOS DB

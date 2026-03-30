@@ -56,8 +56,8 @@ output "cosmos_database_name" {
 }
 
 # --- Private Endpoint ---
-
-output "private_endpoint_ip" {
-  description = "Private IP address assigned to the SQL Server private endpoint"
-  value       = azurerm_private_endpoint.sql.private_service_connection[0].private_ip_address
-}
+# Disabled: private endpoint not deployed (cross-region deployment)
+# output "private_endpoint_ip" {
+#   description = "Private IP address assigned to the SQL Server private endpoint"
+#   value       = azurerm_private_endpoint.sql.private_service_connection[0].private_ip_address
+# }

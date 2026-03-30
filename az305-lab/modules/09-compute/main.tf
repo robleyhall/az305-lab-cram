@@ -281,7 +281,7 @@ resource "azurerm_service_plan" "webapp" {
   location            = azurerm_resource_group.compute.location
   resource_group_name = azurerm_resource_group.compute.name
   os_type             = "Linux"
-  sku_name            = "B1"
+  sku_name            = "F1"
   tags                = local.common_tags
 }
 
@@ -409,7 +409,7 @@ resource "azurerm_container_group" "main" {
 
   container {
     name   = "nginx"
-    image  = "nginx:latest"
+    image  = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
     cpu    = "0.5"
     memory = "0.5"
 
