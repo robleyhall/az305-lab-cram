@@ -95,3 +95,19 @@
 **Fix:** Added `shared_access_key_enabled = true` to all `azurerm_storage_account` resources across modules 06, 08, 09, and 12. This explicitly opts in to key-based auth, overriding the subscription default.
 
 **Rule:** Always set `shared_access_key_enabled = true` on storage accounts when Terraform needs to manage data plane resources (containers, blobs, file shares, queues). Corporate and MCAPS subscriptions often have policies disabling key auth by default. The Terraform provider cannot use Entra-only auth for data plane operations in older provider versions.
+
+### Lesson 12: MCAPS subscriptions block SQL Server, App Service, and many PaaS services entirely
+
+**What happened:** SQL Server creation returned `ProvisioningDisabled` in both eastus AND eastus2 — a subscription-wide block, not a regional issue. App Service Plans failed with quota=0 for Free, Basic, AND Dynamic VM tiers in all regions. These are MCAPS subscription restrictions that cannot be resolved by changing regions.
+
+**Fix:** Deployed Cosmos DB to eastus2 (works). SQL Server, App Service Plans, Function Apps, and Web Apps remain blocked. ACI was fixed by switching from Docker Hub (`nginx:latest`) to Microsoft Container Registry (`mcr.microsoft.com/azuredocs/aci-helloworld:latest`).
+
+**Rule:** MCAPS subscriptions have hard blocks on multiple PaaS services (SQL Server, App Service, Functions). Before starting a lab, verify PaaS availability with a quick test deployment. If PaaS services are needed, use a Pay-As-You-Go or Visual Studio Enterprise subscription instead. Also: always use MCR images for ACI instead of Docker Hub — corporate networks often block Docker Hub access.
+
+### Lesson 13: Azure Migrate projects don't support eastus and require older API versions
+
+**What happened:** `Microsoft.Migrate/migrateProjects` resource failed in eastus with `LocationNotAvailableForResourceType`. After moving to centralus, it failed again with `NoRegisteredProviderFound` for API version `2023-01-01`.
+
+**Fix:** Changed location to `centralus` and API version to `2020-05-01` (the latest supported version). Also had to register `Microsoft.Migrate` provider first.
+
+**Rule:** Azure Migrate has limited region support (no eastus) and uses older API versions. Check the error message for the list of supported regions and API versions. Always verify provider registration with `az provider show -n Microsoft.Migrate` before deploying.
