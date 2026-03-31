@@ -134,7 +134,7 @@ locals {
 # =============================================================================
 
 resource "azurerm_resource_group" "migration" {
-  name     = "${var.prefix}-migration-rg"
+  name     = "${var.prefix}-mod12-migration-rg"
   location = var.location
   tags     = local.common_tags
 

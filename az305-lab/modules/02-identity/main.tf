@@ -80,7 +80,7 @@ resource "random_string" "suffix" {
 # enterprise Azure environments.
 
 resource "azurerm_resource_group" "identity" {
-  name     = "${var.prefix}-identity-rg-${random_string.suffix.result}"
+  name     = "${var.prefix}-mod02-identity-rg-${random_string.suffix.result}"
   location = var.location
   tags     = local.common_tags
 

@@ -50,7 +50,7 @@ locals {
 # =============================================================================
 
 resource "azurerm_resource_group" "apparch" {
-  name     = "${var.prefix}-apparch-rg"
+  name     = "${var.prefix}-mod10-apparch-rg"
   location = var.location
   tags     = local.common_tags
 

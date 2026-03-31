@@ -85,7 +85,7 @@ data "azurerm_subscription" "current" {}
 # =============================================================================
 
 resource "azurerm_resource_group" "monitoring" {
-  name     = "${var.prefix}-monitoring-rg"
+  name     = "${var.prefix}-mod04-monitoring-rg"
   location = var.location
   tags     = local.common_tags
 

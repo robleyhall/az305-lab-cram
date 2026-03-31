@@ -63,7 +63,7 @@ locals {
 # boundaries, or team ownership boundaries.
 
 resource "azurerm_resource_group" "governance" {
-  name     = "${var.prefix}-governance-rg"
+  name     = "${var.prefix}-mod01-governance-rg"
   location = var.location
   tags     = local.common_tags
 

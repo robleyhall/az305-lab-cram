@@ -299,7 +299,7 @@ resource "random_string" "suffix" {
 # =============================================================================
 
 resource "azurerm_resource_group" "storage" {
-  name     = "${var.prefix}-storage-rg"
+  name     = "${var.prefix}-mod06-storage-rg"
   location = var.location
   tags     = local.common_tags
 

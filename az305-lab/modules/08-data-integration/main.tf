@@ -64,7 +64,7 @@ locals {
 # =============================================================================
 
 resource "azurerm_resource_group" "main" {
-  name     = "${var.prefix}-dataintegration-rg"
+  name     = "${var.prefix}-mod08-dataintegration-rg"
   location = var.location
   tags     = local.common_tags
 

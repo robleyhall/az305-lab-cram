@@ -89,7 +89,7 @@ resource "random_password" "sql_admin" {
 # Resource Group
 # =============================================================================
 resource "azurerm_resource_group" "databases" {
-  name     = "${var.prefix}-databases-rg-${random_string.suffix.result}"
+  name     = "${var.prefix}-mod07-databases-rg-${random_string.suffix.result}"
   location = var.location
   tags     = local.common_tags
 

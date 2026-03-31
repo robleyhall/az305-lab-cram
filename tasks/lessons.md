@@ -209,3 +209,27 @@ The profiler detected constraints, but the modules mostly hardcode the values an
 **Fix:** Replaced the `.auto.tfvars` approach with a `.env` file that exports `TF_VAR_` environment variables. The deploy script sources it before running terraform. Environment variables for undeclared variables are silently ignored, so each module only declares the profile variables it uses.
 
 **Rule:** Don't put `.auto.tfvars` in a parent directory and assume child modules will load it — they won't. For cross-module variable sharing, use either `TF_VAR_` environment variables (silently ignored when undeclared) or explicit `-var-file` paths. If using `-var-file`, every variable in the file must be declared by the target module or Terraform will error.
+
+### Lesson 17: Recovery Services vault soft-delete blocks teardown
+
+**What happened:** `terraform destroy` on module 05-ha-dr failed because the Recovery Services vault had VM backup items in soft-deleted state. MCAPS subscription policy prevents disabling soft-delete on vaults (`BMSUserErrorDisablingSoftDeleteStateNotAllowed`).
+
+**Fix:** Undelete the backup items (`az backup protection undelete`), wait for propagation, then delete backup data (`az backup protection disable --delete-backup-data true`). If the vault still won't delete, force-delete the resource group with `az group delete` and clear terraform state manually with `terraform state rm`.
+
+**Rule:** Before destroying modules with Recovery Services vaults, unregister all backup items and purge backup data. The sequence is: (1) undelete soft-deleted items, (2) wait 15–30s for propagation, (3) disable protection with `--delete-backup-data true`, (4) then destroy. If the subscription blocks disabling soft-delete, force-delete the RG and clear state.
+
+### Lesson 18: Azure auto-creates NSGs and alert rules that block RG deletion
+
+**What happened:** Three resource groups (foundation, monitoring, networking) couldn't be deleted by `terraform destroy` because Azure had auto-created resources that Terraform didn't manage — per-subnet NSGs (`*-nsg-eastus`) and Application Insights Smart Detection alert rules. Terraform's destroy saw an empty state but the RGs still had sub-resources.
+
+**Fix:** Force-deleted the RGs with `az group delete` and cleared terraform state with `terraform state rm`.
+
+**Rule:** Azure auto-creates NSGs for subnets and alert rules for Application Insights. These aren't managed by Terraform and will block RG deletion during teardown. For clean teardown scripts, add `az group delete --yes --no-wait` as a fallback after `terraform destroy`, or use `lifecycle { ignore_changes }` patterns that also handle sub-resource cleanup.
+
+### Lesson 19: Resource locks must be destroyed before locked resources
+
+**What happened:** Module 01-governance destroy failed with `ScopeLocked` because the CanNotDelete lock on the RG prevented policy assignment deletion. Terraform tried to delete the policy assignment before deleting the lock.
+
+**Fix:** Retried `terraform destroy` — the lock had been deleted on the first attempt but the destroy errored mid-way. The retry completed successfully.
+
+**Rule:** Terraform usually handles lock deletion order correctly, but if a destroy fails mid-way due to timing, retry. The lock is typically deleted first, and the retry will find it already gone and proceed with the remaining resources.

@@ -63,7 +63,7 @@ resource "random_string" "suffix" {
 # Resource Group
 # =============================================================================
 resource "azurerm_resource_group" "networking" {
-  name     = "${var.prefix}-networking-rg-${local.suffix}"
+  name     = "${var.prefix}-mod11-networking-rg-${local.suffix}"
   location = var.location
   tags     = local.common_tags
 

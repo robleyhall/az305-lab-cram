@@ -94,7 +94,7 @@ resource "random_string" "suffix" {
 # Each lab module creates its own resource group for isolation and easy cleanup.
 
 resource "azurerm_resource_group" "compute" {
-  name     = "${var.prefix}-compute-rg"
+  name     = "${var.prefix}-mod09-compute-rg"
   location = var.location
   tags     = local.common_tags
 
@@ -553,7 +553,7 @@ resource "azurerm_application_insights" "func" {
 # than the main compute RG (Dynamic SKU + Linux Worker constraint).
 
 resource "azurerm_resource_group" "func" {
-  name     = "${var.prefix}-func-rg"
+  name     = "${var.prefix}-mod09-func-rg"
   location = var.appservice_location
   tags     = local.common_tags
 

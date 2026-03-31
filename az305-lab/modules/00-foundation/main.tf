@@ -55,7 +55,7 @@ resource "random_string" "suffix" {
 # Every lab module creates its own resource group, but the foundation RG also
 # holds shared networking and monitoring resources consumed by all modules.
 resource "azurerm_resource_group" "foundation" {
-  name     = "${var.prefix}-foundation-rg-${random_string.suffix.result}"
+  name     = "${var.prefix}-mod00-foundation-rg-${random_string.suffix.result}"
   location = var.location
   tags     = local.common_tags
 
