@@ -120,52 +120,84 @@
 
 **Rule:** Azure Migrate has limited region support (no eastus) and uses older API versions. Check the error message for the list of supported regions and API versions. Always verify provider registration with `az provider show -n Microsoft.Migrate` before deploying.
 
-### Lesson 15: Azure Policy as a second controller — the IaC operating model
+### Lesson 15: Azure Policy can silently change your Terraform resources
 
-**What happened:** After deploying all 13 modules, `terraform plan` showed drift on every module. Further, policy remediation tasks continued to mutate resources hours after deployment — disabling public network access on storage accounts and Key Vault while we were working on other things. The instinct was to detect and fix each drift instance. But drift here is a symptom of a structural problem: Azure Policy can function as a second controller relative to Terraform, participating in the control path of resource state outside Terraform's transaction boundary.
+**What happened:** After deploying all 13 modules, `terraform plan` showed drift on every module — settings we never changed were different from what our Terraform declared. Hours later, more drift appeared: policy remediation tasks disabled public network access on storage accounts and Key Vault while we were working on other modules.
 
-**The structural problem:** Some Azure Policy effects can mutate requests or alter existing resources:
+**Why it happened:** Azure Policy has effects that change resources without Terraform knowing:
 
-| Policy Effect | Mutates State? | When? | Relationship to IaC |
-|--------------|---------------|-------|---------------------|
-| **Audit / AuditIfNotExists** | No | — | Evaluative only. No IaC impact. |
-| **Deny** | No (blocks request) | Request-time | Gates the transaction. IaC must satisfy deny conditions to deploy. |
-| **Modify / Append** | Yes | Request-time (during create/update) | Alters the resource during the ARM transaction. The realized state differs from what IaC requested. |
-| **DeployIfNotExists + Remediation** | Yes | After successful create/update, or async via remediation task | A second reconciliation loop. Can change existing resources on its own schedule, outside any IaC transaction. |
+| Policy Effect | What it does | When | Example |
+|---|---|---|---|
+| **Audit** | Reports non-compliance. Changes nothing. | — | "Flag storage accounts without HTTPS" |
+| **Deny** | Blocks the deployment request. | At deploy time | "Reject VMs outside allowed regions" |
+| **Modify / Append** | Changes settings during deployment. Terraform requests one value; Azure applies a different one. | At deploy time | "Force `allowSharedKeyAccess = false` on all storage accounts" |
+| **DeployIfNotExists (DINE)** | Creates or changes related resources after deployment succeeds. Remediation tasks can also run on a schedule against existing resources. | After deploy, or async | "Add a diagnostic setting to every Key Vault" |
 
-Modify/Append alter requests during create or update. DeployIfNotExists can act after a successful create. Remediation tasks can change existing resources at any time. This means policy can function as a second controller — not merely a source of after-the-fact drift noise.
+The first two (Audit, Deny) are straightforward — one is informational, the other blocks you with a clear error. The last two (Modify, DINE) are the source of drift: they change resources behind Terraform's back.
 
-**Core principle:** If policy can mutate or remediate resources without a published contract, then drift is a design consequence of an unmanaged second control loop, not a tooling surprise. The correct operating model is:
+**The perpetual-drift trap:** If your Terraform says `public_network_access_enabled = true` but a Modify policy forces it to `false` at creation time, you get a loop:
+1. `terraform plan` sees a diff — config says `true`, Azure says `false`
+2. `terraform apply` sends `true` to Azure
+3. Modify policy intercepts and sets `false`
+4. Next `terraform plan` shows the same diff again
 
-1. **Treat policy assignments as part of the subscription/landing-zone contract.** Policy defines what the platform enforces. This contract must be known to IaC authors, not discovered at deploy time.
+This repeats forever. The fix is not to fight the policy — it's to declare the value the policy enforces.
 
-2. **Terraform should directly model the policy-enforced steady state.** A config that declares a state the platform will never allow is a wrong config, not a drift victim. If policy sets `allowSharedKeyAccess = false`, the Terraform config must declare `shared_access_key_enabled = false` because that IS the realized state.
+**The correct approach — read, don't probe:**
 
-3. **Policy changes are platform contract changes.** When the platform team activates a new Modify or DINE policy, that is a contract change that should be validated, staged, and communicated — with the same rigor as an API breaking change. IaC teams must update their configs to reflect the new steady state.
+We initially built a profiler (`prerequisites/profile-subscription.sh`) that created temporary resources to discover what policies changed. This was useful for learning what our subscription enforced, but it's the wrong model for a finished artifact:
 
-4. **If no published contract exists, discovery is a fallback.** Probing or profiling can discover the effective contract, but this is a tactical workaround for the absence of a published contract — not the primary operating model.
+- It's invasive — creates real resources to detect behavior
+- It's incomplete — only probes for specific policies we thought to test
+- It's fragile — detection logic must be updated whenever new policies are added
+- It gives false confidence — our audit found that 9 of 11 generated variables were never consumed by any module
 
-**The three-layer model:**
+The better approach is to **read policy assignments directly** using read-only APIs:
+
+```bash
+# Read all policy assignments affecting the subscription
+az policy assignment list --query "[].{name:displayName, effect:parameters.effect.value}" --output table
+
+# Read a specific policy definition to see its effect and conditions
+az policy definition show --name <policy-name> --query "{effect:policyRule.then.effect, conditions:policyRule.if}"
 ```
-Layer 3: Application IaC (Terraform modules)
-    ↑ consumes variables from
-Layer 2: Platform Contract (published or discovered)
-    ↑ ideally published by platform team / fallback: discovered by profiler
-Layer 1: Platform Policies (Azure Policy — Deny, Modify, DINE, Remediation)
-    (owned by platform/security team, inherited from management groups)
-```
 
-- **Layer 1** defines enforcement. IaC authors can't change it.
-- **Layer 2** translates Layer 1 into IaC-consumable variables. Ideally published by the platform team as part of the landing zone contract. When no published contract exists, `prerequisites/profile-subscription.sh` discovers it by probing.
-- **Layer 3** consumes Layer 2 and declares the policy-enforced steady state directly.
+This is read-only, complete, and deterministic. You can see every active policy, its effect, and its conditions without creating anything.
 
-**When `ignore_changes` is appropriate vs when it hides a control-plane problem:**
-- ✅ **Non-semantic, platform-managed attributes**: `tags["rg-class"]` (Azure auto-classification, doesn't affect behavior), `enabled_metric` (representational expansion), `ip_tags` (platform classification, force-new attribute).
-- ❌ **Semantically meaningful attributes**: auth settings, network access, security posture. Using `ignore_changes` on these hides the fact that the IaC config declares a state that will never exist. The fix is to declare the value the platform enforces.
+**What the profiler should become:** A read-only compatibility check that:
+1. Lists policy assignments on the subscription (read-only)
+2. Identifies Deny, Modify, and DINE effects and what they enforce
+3. Checks VM SKU availability and regional service restrictions (already read-only)
+4. Writes the results to `subscription-profile.auto.tfvars` for Terraform to consume
+5. Presents clear, plain-English output: "Your subscription enforces X, so the lab will use Y"
 
-**Observed behavior from this deployment:** During testing, `az deployment group validate` and `az deployment group what-if` did not surface Modify/Append effects — they returned success for resources that policy subsequently mutated at creation time. This was observed behavior in our environment; we did not find official documentation confirming or denying whether these APIs are designed to surface modify/append effects. Do not rely on validation or what-if as a substitute for knowing the platform contract.
+**What we got wrong in the implementation:**
 
-**What we built:**
-- `prerequisites/profile-subscription.sh` — fallback contract discovery when no published contract exists. Uses read-only APIs where possible (VM SKUs, provider registrations) and minimal probe resources for modify/append detection.
-- All modules declare the policy-enforced steady state directly in their configs.
-- `ignore_changes` survives only on non-semantic attributes (auto-tags, metric expansion, platform classification tags), each with an inline comment justifying why the attribute is non-semantic.
+An audit of the current codebase found significant gaps between the profiler and the modules:
+
+| Profiler generates | Used by modules? | What actually happens |
+|---|---|---|
+| `vm_size` | ✅ Modules 05, 09, 12 | Properly wired through variables |
+| `appservice_location` | ✅ Module 09 | Properly wired through variables |
+| `sql_location` | ❌ Not referenced | SQL location hardcoded elsewhere |
+| `storage_shared_key_enabled` | ❌ Not referenced | Hardcoded `false` in module 06 |
+| `storage_allow_public_access` | ❌ Not referenced | Hardcoded `false` in module 06 |
+| `storage_use_azuread` | ❌ Not referenced | Hardcoded `true` in module 09 |
+| `eventhub_local_auth_enabled` | ❌ Not referenced | No module consumes this |
+| `servicebus_local_auth_enabled` | ❌ Not referenced | No module consumes this |
+| `cosmosdb_local_auth_disabled` | ❌ Not referenced | No module consumes this |
+
+The profiler detected constraints, but the modules mostly hardcode the values anyway. This means the profiler adds complexity without delivering portability.
+
+**When `ignore_changes` is appropriate:**
+- ✅ Platform metadata that doesn't affect behavior: `tags["rg-class"]` (Azure auto-classification), `enabled_metric` (representational expansion), `ip_tags` (platform tagging)
+- ❌ Security-meaningful settings: auth, network access, encryption. If policy enforces a value, declare it in Terraform. Don't hide the mismatch with `ignore_changes`.
+
+**Rules:**
+
+1. Before writing Terraform for a new subscription, run `az policy assignment list` and read what's enforced. Don't discover it through deployment failures.
+2. If a policy enforces a setting, declare that value in your Terraform config. A config that asks for something the platform will never allow is a bug.
+3. Keep the subscription profiler, but make it read-only. No probe resources. Use `az policy assignment list`, `az vm list-skus`, and `az provider list`.
+4. Every variable the profiler generates must be consumed by at least one module. Don't detect things you won't use.
+5. Deploy scripts should validate that the subscription profile exists before running `terraform apply`.
+6. Use `ignore_changes` only on non-semantic attributes. Each use should have an inline comment explaining why the attribute is noise, not signal.

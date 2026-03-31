@@ -12,6 +12,7 @@
 4. [Dependency Map](#4-dependency-map)
 5. [Network Topology Diagram](#5-network-topology-diagram)
 6. [Exam Domain Mapping](#6-exam-domain-mapping)
+7. [Policy-Aware Deployment Model](#7-policy-aware-deployment-model)
 
 ---
 
@@ -934,3 +935,96 @@ The AZ-305 exam is organized into four weighted domains. Each lab module maps to
 | 10 — App Architecture | | | | ✅ |
 | 11 — Networking | | | | ✅ |
 | 12 — Migration | | | ✅ | |
+
+---
+
+## 7. Policy-Aware Deployment Model
+
+Azure subscriptions — especially internal, MCAPS, Visual Studio, and enterprise subscriptions — enforce policies that change how resources behave. These policies can silently alter Terraform resources at creation time or after deployment. This section documents how the lab handles that.
+
+### Why This Matters
+
+Azure Policy effects like **Modify** and **DeployIfNotExists** can change resource settings without Terraform's knowledge:
+
+```
+What Terraform requests          What Azure actually creates
+─────────────────────────       ─────────────────────────────
+public_network_access = true  →  public_network_access = false  (Modify policy)
+(no diagnostic setting)       →  diagnostic setting added       (DINE + remediation)
+shared_access_key = true      →  shared_access_key = false      (Modify policy)
+```
+
+If Terraform declares a value that policy overrides, every subsequent `terraform plan` shows drift — and every `terraform apply` triggers the same override again. The fix is to detect what policies enforce and declare those values in Terraform directly.
+
+### How the Lab Handles It
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Step 1: Subscription Compatibility Check (read-only)    │
+│                                                          │
+│  prerequisites/profile-subscription.sh                   │
+│    ├─ az policy assignment list     → active policies    │
+│    ├─ az vm list-skus               → VM availability    │
+│    ├─ az provider list              → registered providers│
+│    └─ writes: modules/subscription-profile.auto.tfvars   │
+└──────────────────────────────┬───────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────┐
+│  Step 2: Deploy with policy-aware defaults               │
+│                                                          │
+│  Terraform modules read subscription-profile.auto.tfvars │
+│  and set security/network/auth values to match what the  │
+│  subscription actually enforces.                         │
+│                                                          │
+│  Example: if policy enforces shared_access_key = false,  │
+│  the module declares shared_access_key_enabled = false   │
+│  so Terraform and Azure agree on the value.              │
+└──────────────────────────────┬───────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────┐
+│  Step 3: Ongoing — detect changes with terraform plan    │
+│                                                          │
+│  If new drift appears later, it means either:            │
+│    • A new policy was added → rerun the compatibility    │
+│      check and update configs                            │
+│    • A remediation task ran → declare the enforced       │
+│      value in Terraform                                  │
+└──────────────────────────────────────────────────────────┘
+```
+
+### What the Compatibility Check Detects
+
+| Category | Detection Method | What It Finds |
+|----------|-----------------|---------------|
+| **VM SKU availability** | `az vm list-skus` (read-only) | Which VM sizes are available per region. Internal subscriptions often restrict B-series and D-series entirely. |
+| **Regional service restrictions** | `az vm list-skus`, provider APIs (read-only) | Which regions allow SQL Server, App Service, etc. Some regions are blocked for specific subscription types. |
+| **Policy-enforced settings** | `az policy assignment list` + `az policy definition show` (read-only) | Modify/Append policies that force specific values on storage accounts, Key Vault, messaging services. |
+| **Provider registrations** | `az provider list` (read-only) | Whether required resource providers (Microsoft.Sql, Microsoft.Web, etc.) are registered. |
+
+All detection uses **read-only APIs**. No temporary resources are created.
+
+### Policy-Sensitive Settings in This Lab
+
+These settings vary across subscription types and are driven by the compatibility check:
+
+| Setting | Affected Resources | Why It Varies |
+|---------|-------------------|---------------|
+| `public_network_access_enabled` | Storage, Key Vault, SQL | Corporate policies often force private-only access |
+| `shared_access_key_enabled` | Storage accounts | Some subscriptions disable key-based auth entirely |
+| `allow_nested_items_to_be_public` | Storage accounts | Policies may block public blob access |
+| `local_auth_enabled` | Event Hubs, Service Bus, API Management | Entra-only auth may be enforced |
+| `storage_uses_managed_identity` | Function Apps | Required when key auth is disabled |
+| `vm_size` | VMs in modules 05, 09, 12 | SKU families vary by subscription type |
+| `sql_location` / `appservice_location` | SQL, App Service, Functions | Regional provisioning restrictions |
+
+### Non-Semantic Drift (Safe to Ignore)
+
+Some Azure-managed attributes change outside Terraform without affecting behavior. These use `ignore_changes` with inline justification:
+
+| Attribute | Where | Why It's Safe |
+|-----------|-------|---------------|
+| `tags["rg-class"]` | All resource groups | Azure auto-classification metadata; no behavioral impact |
+| `enabled_metric` | Diagnostic settings (module 07) | Azure expands `AllMetrics` into individual category names; representational only |
+| `ip_tags` | Public IPs (module 05) | Azure adds `FirstPartyUsage` tag; would cause unnecessary force-replacement |
