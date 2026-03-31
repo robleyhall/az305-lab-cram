@@ -55,3 +55,17 @@ variable "tags" {
     ManagedBy  = "Terraform"
   }
 }
+
+# --- Subscription profile variables (set by compatibility check) ---
+
+variable "sql_location" {
+  type        = string
+  default     = ""
+  description = "Region for SQL Server. If empty, uses var.location. Override when primary region blocks SQL provisioning."
+}
+
+variable "sql_public_network_access" {
+  type        = bool
+  default     = true
+  description = "Allow public network access to SQL Server. Set false if subscription policy enforces private-only."
+}

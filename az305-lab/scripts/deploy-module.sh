@@ -132,6 +132,18 @@ echo -e "${BLUE}═════════════════════�
 START_TIME=$(date +%s)
 cd "$MODULE_PATH"
 
+# Source subscription profile if available (sets TF_VAR_ environment variables)
+PROFILE_ENV="${MODULES_DIR}/subscription-profile.env"
+if [[ -f "$PROFILE_ENV" ]]; then
+  # shellcheck source=/dev/null
+  source "$PROFILE_ENV"
+  echo -e "${GREEN}✓ Subscription profile loaded${NC}"
+else
+  echo -e "${YELLOW}⚠ No subscription profile found at modules/subscription-profile.env${NC}"
+  echo -e "${YELLOW}  Run ./prerequisites/profile-subscription.sh first for policy-aware defaults.${NC}"
+  echo -e "${YELLOW}  Continuing with module defaults...${NC}"
+fi
+
 # Check for Terraform files
 if ! ls *.tf &>/dev/null; then
   echo -e "${YELLOW}⚠ No Terraform files found in ${MODULE_DIR_NAME}. Skipping.${NC}"

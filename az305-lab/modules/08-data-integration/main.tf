@@ -134,7 +134,7 @@ resource "azurerm_data_factory" "main" {
   # VNet. Managed private endpoints connect to PaaS services without public exposure.
   managed_virtual_network_enabled = true
 
-  public_network_enabled = false # Policy-enforced steady state
+  public_network_enabled = var.data_factory_public_network
 
   # System-assigned managed identity — used for RBAC-based auth to Data Lake,
   # Key Vault, and other Azure services. Eliminates stored credentials.
@@ -232,9 +232,9 @@ resource "azurerm_storage_account" "datalake" {
   # ABFSS driver, and efficient directory-level operations.
   is_hns_enabled = true
 
-  allow_nested_items_to_be_public  = false
-  shared_access_key_enabled        = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  allow_nested_items_to_be_public  = var.storage_allow_public_access
+  shared_access_key_enabled        = var.storage_shared_key_enabled
+  public_network_access_enabled    = var.storage_public_network_access
 
   tags = local.common_tags
 }

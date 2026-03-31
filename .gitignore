@@ -4,6 +4,7 @@
 *.tfvars
 !*.tfvars.example
 .terraform.lock.hcl
+subscription-profile.env
 crash.log
 override.tf
 override.tf.json

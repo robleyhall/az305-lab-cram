@@ -47,3 +47,11 @@ variable "tags" {
     ManagedBy  = "Terraform"
   }
 }
+
+# --- Subscription profile variables (set by compatibility check) ---
+
+variable "local_auth_enabled" {
+  type        = bool
+  default     = true
+  description = "Allow local (key-based) authentication on Event Hubs, Service Bus, and API Management. Set false if subscription policy enforces Entra-only auth."
+}

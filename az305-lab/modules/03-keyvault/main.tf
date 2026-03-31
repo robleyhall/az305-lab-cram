@@ -188,7 +188,7 @@ resource "azurerm_key_vault" "main" {
 
   # Purge protection — disabled for easy lab teardown.
   purge_protection_enabled      = false
-  public_network_access_enabled = false # Policy-enforced steady state
+  public_network_access_enabled = var.keyvault_public_network_access
 
   # Network ACLs — defence in depth alongside the private endpoint.
   # With public_network_access disabled, only private endpoint traffic is allowed.

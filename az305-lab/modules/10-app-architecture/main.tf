@@ -154,7 +154,7 @@ resource "azurerm_eventhub_namespace" "main" {
   resource_group_name           = azurerm_resource_group.apparch.name
   sku                           = "Standard"
   capacity                      = 1
-  local_authentication_enabled  = false # MCAPS policy enforces Entra-only auth
+  local_authentication_enabled  = var.local_auth_enabled
   tags                          = local.common_tags
 }
 
@@ -226,7 +226,7 @@ resource "azurerm_servicebus_namespace" "main" {
   location            = azurerm_resource_group.apparch.location
   resource_group_name = azurerm_resource_group.apparch.name
   sku                 = "Standard"
-  local_auth_enabled  = false # MCAPS policy enforces Entra-only auth
+  local_auth_enabled  = var.local_auth_enabled
   tags                = local.common_tags
 }
 

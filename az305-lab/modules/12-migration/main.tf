@@ -336,15 +336,15 @@ resource "azurerm_storage_account" "migration_staging" {
   resource_group_name      = azurerm_resource_group.migration.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  shared_access_key_enabled = false
+  shared_access_key_enabled = var.storage_shared_key_enabled
 
   # Blob versioning helps track migration data changes
   blob_properties {
     versioning_enabled = true
   }
 
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags = local.common_tags
 }
 

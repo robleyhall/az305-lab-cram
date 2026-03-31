@@ -171,9 +171,9 @@ resource "azurerm_storage_account" "bootdiag" {
   resource_group_name      = azurerm_resource_group.compute.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  shared_access_key_enabled = false
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  shared_access_key_enabled = var.storage_shared_key_enabled
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags                     = local.common_tags
 }
 
@@ -529,9 +529,9 @@ resource "azurerm_storage_account" "func" {
   resource_group_name      = azurerm_resource_group.compute.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  shared_access_key_enabled = false
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  shared_access_key_enabled = var.storage_shared_key_enabled
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags                     = local.common_tags
 }
 
@@ -674,9 +674,9 @@ resource "azurerm_storage_account" "batch" {
   resource_group_name      = azurerm_resource_group.compute.name
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  shared_access_key_enabled = false
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  shared_access_key_enabled = var.storage_shared_key_enabled
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags                     = local.common_tags
 }
 

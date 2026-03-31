@@ -52,3 +52,29 @@ variable "deploy_datalake_filesystems" {
   default     = false
   description = "Create Data Lake Gen2 file systems (raw/processed/curated). Set true on initial deploy only. With public_network_access disabled by policy, Terraform cannot refresh these from outside the private network."
 }
+
+# --- Subscription profile variables (set by compatibility check) ---
+
+variable "storage_shared_key_enabled" {
+  type        = bool
+  default     = true
+  description = "Allow shared key access on storage accounts. Set false if subscription policy enforces Entra-only auth."
+}
+
+variable "storage_public_network_access" {
+  type        = bool
+  default     = true
+  description = "Allow public network access to storage accounts. Set false if subscription policy enforces private-only."
+}
+
+variable "storage_allow_public_access" {
+  type        = bool
+  default     = true
+  description = "Allow public blob access on storage accounts. Set false if subscription policy blocks it."
+}
+
+variable "data_factory_public_network" {
+  type        = bool
+  default     = true
+  description = "Allow public network access to Data Factory. Set false if subscription policy enforces private-only."
+}

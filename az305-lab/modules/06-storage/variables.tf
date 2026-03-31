@@ -43,3 +43,23 @@ variable "tags" {
     ManagedBy  = "Terraform"
   }
 }
+
+# --- Subscription profile variables (set by compatibility check) ---
+
+variable "storage_shared_key_enabled" {
+  type        = bool
+  default     = true
+  description = "Allow shared key access on storage accounts. Set false if subscription policy enforces Entra-only auth."
+}
+
+variable "storage_public_network_access" {
+  type        = bool
+  default     = true
+  description = "Allow public network access to storage accounts. Set false if subscription policy enforces private-only."
+}
+
+variable "storage_allow_public_access" {
+  type        = bool
+  default     = true
+  description = "Allow public blob access on storage accounts. Set false if subscription policy blocks it."
+}

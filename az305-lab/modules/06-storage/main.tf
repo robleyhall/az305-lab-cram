@@ -335,7 +335,7 @@ resource "azurerm_storage_account" "main" {
   # Security hardening
   min_tls_version            = "TLS1_2"
   https_traffic_only_enabled = true
-  shared_access_key_enabled  = false # Required for Terraform provider data plane operations
+  shared_access_key_enabled  = var.storage_shared_key_enabled
   is_hns_enabled             = false # Standard blob — NOT Data Lake
 
   # Blob data protection
@@ -359,13 +359,12 @@ resource "azurerm_storage_account" "main" {
     bypass                     = ["AzureServices"]
   }
 
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags = local.common_tags
 }
 
 # --- Diagnostic Settings for Primary Storage Account ---
-# Routes storage metrics to the centralized Log Analytics workspace from Module 00.
 
 resource "azurerm_monitor_diagnostic_setting" "storage_account" {
   name                       = "${var.prefix}-storage-diag"
@@ -534,15 +533,13 @@ resource "azurerm_storage_account" "premium_blob" {
 
   min_tls_version            = "TLS1_2"
   https_traffic_only_enabled = true
-  shared_access_key_enabled  = false
+  shared_access_key_enabled  = var.storage_shared_key_enabled
 
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags = local.common_tags
 }
 
-# =============================================================================
-# DATA LAKE STORAGE GEN2 (ADLS Gen2)
 # =============================================================================
 # ADLS Gen2 = Storage account with is_hns_enabled = true
 #
@@ -577,10 +574,10 @@ resource "azurerm_storage_account" "datalake" {
 
   min_tls_version            = "TLS1_2"
   https_traffic_only_enabled = true
-  shared_access_key_enabled  = false
+  shared_access_key_enabled  = var.storage_shared_key_enabled
 
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled    = false # Policy-enforced steady state
+  allow_nested_items_to_be_public = var.storage_allow_public_access
+  public_network_access_enabled    = var.storage_public_network_access
   tags = local.common_tags
 }# =============================================================================
 # MANAGED DISKS

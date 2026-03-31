@@ -74,6 +74,18 @@ echo -e "${BLUE}  Continue on error: ${CONTINUE_ON_ERROR}${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
 
+# Check for subscription profile
+LAB_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROFILE_ENV="${LAB_ROOT}/modules/subscription-profile.env"
+if [[ -f "$PROFILE_ENV" ]]; then
+  echo -e "${GREEN}✓ Subscription profile found${NC}"
+else
+  echo -e "${YELLOW}⚠ No subscription profile found at modules/subscription-profile.env${NC}"
+  echo -e "${YELLOW}  Run ./prerequisites/profile-subscription.sh first for policy-aware defaults.${NC}"
+  echo -e "${YELLOW}  Continuing with module defaults...${NC}"
+fi
+echo ""
+
 TOTAL_START=$(date +%s)
 
 for i in "${!MODULES[@]}"; do

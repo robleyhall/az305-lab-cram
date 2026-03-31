@@ -49,3 +49,11 @@ variable "deploy_kv_data_plane" {
   default     = false
   description = "Create Key Vault data plane objects (secret, key, certificate). Set true on initial deploy only. With public_network_access disabled by policy, Terraform cannot refresh these from outside the private network on subsequent plans."
 }
+
+# --- Subscription profile variables (set by compatibility check) ---
+
+variable "keyvault_public_network_access" {
+  type        = bool
+  default     = true
+  description = "Allow public network access to Key Vault. Set false if subscription policy enforces private-only access."
+}

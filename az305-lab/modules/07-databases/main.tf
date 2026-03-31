@@ -60,6 +60,7 @@ locals {
     Module  = "07-databases"
     Purpose = "Azure SQL and Cosmos DB database services"
   })
+  sql_location = var.sql_location != "" ? var.sql_location : var.location
 }
 
 # -----------------------------------------------------------------------------
@@ -140,9 +141,9 @@ resource "azurerm_resource_group" "databases" {
 resource "azurerm_mssql_server" "main" {
   name                          = "${var.prefix}-sqlserver-${random_string.suffix.result}"
   resource_group_name           = azurerm_resource_group.databases.name
-  location                      = azurerm_resource_group.databases.location
+  location                      = local.sql_location
   version                       = "12.0"
-  public_network_access_enabled = true # No private endpoint in cross-region deployment
+  public_network_access_enabled = var.sql_public_network_access
   tags                          = local.common_tags
 
   minimum_tls_version = "1.2"
