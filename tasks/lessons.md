@@ -168,7 +168,7 @@ This is read-only, complete, and deterministic. You can see every active policy,
 1. Lists policy assignments on the subscription (read-only)
 2. Identifies Deny, Modify, and DINE effects and what they enforce
 3. Checks VM SKU availability and regional service restrictions (already read-only)
-4. Writes the results to `subscription-profile.auto.tfvars` for Terraform to consume
+4. Writes the results to `subscription-profile.env` as `TF_VAR_` exports
 5. Presents clear, plain-English output: "Your subscription enforces X, so the lab will use Y"
 
 **What we got wrong in the implementation:**
@@ -201,3 +201,11 @@ The profiler detected constraints, but the modules mostly hardcode the values an
 4. Every variable the profiler generates must be consumed by at least one module. Don't detect things you won't use.
 5. Deploy scripts should validate that the subscription profile exists before running `terraform apply`.
 6. Use `ignore_changes` only on non-semantic attributes. Each use should have an inline comment explaining why the attribute is noise, not signal.
+
+### Lesson 16: Terraform auto.tfvars only loads from the working directory
+
+**What happened:** The profiler wrote `subscription-profile.auto.tfvars` to `modules/`, but each module runs terraform from its own subdirectory (e.g., `modules/06-storage/`). Terraform only auto-loads `.auto.tfvars` from the current working directory — not parent directories. So the profile was never loaded. The 2 variables that "worked" (`vm_size`, `appservice_location`) had been manually copied into each module's `terraform.tfvars`.
+
+**Fix:** Replaced the `.auto.tfvars` approach with a `.env` file that exports `TF_VAR_` environment variables. The deploy script sources it before running terraform. Environment variables for undeclared variables are silently ignored, so each module only declares the profile variables it uses.
+
+**Rule:** Don't put `.auto.tfvars` in a parent directory and assume child modules will load it — they won't. For cross-module variable sharing, use either `TF_VAR_` environment variables (silently ignored when undeclared) or explicit `-var-file` paths. If using `-var-file`, every variable in the file must be declared by the target module or Terraform will error.
