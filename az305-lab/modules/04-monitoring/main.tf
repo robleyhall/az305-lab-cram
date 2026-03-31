@@ -90,6 +90,7 @@ resource "azurerm_resource_group" "monitoring" {
   tags     = local.common_tags
 
   lifecycle {
+    # Non-semantic: Azure auto-adds rg-class tag for internal classification. Not a config choice.
     ignore_changes = [tags["rg-class"]]
   }
 }

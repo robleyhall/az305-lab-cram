@@ -93,6 +93,7 @@ resource "azurerm_resource_group" "databases" {
   tags     = local.common_tags
 
   lifecycle {
+    # Non-semantic: Azure auto-adds rg-class tag for internal classification. Not a config choice.
     ignore_changes = [tags["rg-class"]]
   }
 }
@@ -636,6 +637,7 @@ resource "azurerm_monitor_diagnostic_setting" "sql_audit" {
   }
 
   lifecycle {
+    # Non-semantic: Azure expands AllMetrics into individual category names. Representational, not config.
     ignore_changes = [enabled_metric]
   }
 
@@ -663,6 +665,7 @@ resource "azurerm_monitor_diagnostic_setting" "cosmos" {
   }
 
   lifecycle {
+    # Non-semantic: Azure expands AllMetrics into individual category names. Representational, not config.
     ignore_changes = [enabled_metric]
   }
 }

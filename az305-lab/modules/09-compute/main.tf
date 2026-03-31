@@ -99,6 +99,7 @@ resource "azurerm_resource_group" "compute" {
   tags     = local.common_tags
 
   lifecycle {
+    # Non-semantic: Azure auto-adds rg-class tag for internal classification. Not a config choice.
     ignore_changes = [tags["rg-class"]]
   }
 }
@@ -555,6 +556,7 @@ resource "azurerm_resource_group" "func" {
   tags     = local.common_tags
 
   lifecycle {
+    # Non-semantic: Azure auto-adds rg-class tag for internal classification. Not a config choice.
     ignore_changes = [tags["rg-class"]]
   }
 }

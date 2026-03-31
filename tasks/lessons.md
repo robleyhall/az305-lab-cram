@@ -120,29 +120,44 @@
 
 **Rule:** Azure Migrate has limited region support (no eastus) and uses older API versions. Check the error message for the list of supported regions and API versions. Always verify provider registration with `az provider show -n Microsoft.Migrate` before deploying.
 
-### Lesson 15: Azure subscription policies cause persistent Terraform drift — fix config, don't fight policies
+### Lesson 15: Azure Policy as a second controller — the IaC operating model
 
-**What happened:** After deploying all 13 modules, `terraform plan` showed drift on every module. Three distinct patterns:
-1. **`rg-class = "user-managed"` tag** — Azure automatically adds this tag to resource groups. Terraform sees it as unmanaged and wants to remove it.
-2. **`allow_nested_items_to_be_public = false`** — subscription policy enforces this on storage accounts, but Terraform defaults to `true`.
-3. **`local_authentication_enabled = false`** — subscription policy disables local (key-based) auth on Event Hubs, Service Bus, and Cosmos DB. Terraform defaults to `true`.
-4. **`ftp_publish_basic_authentication_enabled` / `webdeploy_publish_basic_authentication_enabled`** — subscription policy disables these on App Service, Terraform defaults to `true`.
-5. **Diagnostic settings `enabled_metric`** — Azure expands `AllMetrics` into individual category names (e.g., `Requests`, `SLI`, `Basic`), causing perpetual diff.
+**What happened:** After deploying all 13 modules, `terraform plan` showed drift on every module. The initial instinct was to treat this as a detection-and-cleanup problem: find the drift, patch the config, re-apply. But this is reactive — it doesn't address why drift keeps appearing or how to prevent it structurally.
 
-**Fix:**
-- RG tags: `lifecycle { ignore_changes = [tags["rg-class"]] }` on all resource groups
-- Storage: explicitly set `allow_nested_items_to_be_public = false`
-- Event Hubs: `local_authentication_enabled = false`
-- Service Bus: `local_auth_enabled = false`
-- Cosmos DB: `local_authentication_disabled = true`
-- App Service: `ftp_publish_basic_authentication_enabled = false`, `webdeploy_publish_basic_authentication_enabled = false`
-- Diagnostic settings: `lifecycle { ignore_changes = [enabled_metric] }`
+**Root cause analysis:** Azure Policy can mutate resource state outside the Terraform execution window. Not all policy effects do this — only some. The operating model must distinguish between them:
 
-**Rule:** After deploying to a managed subscription, always run `terraform plan` and resolve all drift before considering deployment complete. Match Terraform config to subscription policy defaults — don't rely on Terraform defaults when policies override them. Use `lifecycle { ignore_changes }` for Azure-managed attributes that Terraform can't control (e.g., auto-added tags, metric category expansion).
+| Policy Effect | Mutates State? | When? | Second Control Loop? | IaC Implication |
+|--------------|---------------|-------|---------------------|-----------------|
+| **Audit / AuditIfNotExists** | No | — | No | None — evaluative only |
+| **Deny** | No (blocks request) | Request-time | No | IaC must satisfy deny conditions. This is a **discovery** problem — the profiler solves it. |
+| **Modify / Append** | Yes | Request-time (during create/update) | No — inside ARM transaction | IaC must declare the post-mutation steady state. The policy-enforced value IS the desired state. |
+| **DeployIfNotExists + Remediation** | Yes | Async (background task) | **Yes** — remediation runs outside IaC's transaction boundary | IaC must declare the remediated steady state. Policy assignment changes are platform contract changes. |
 
-**Better pattern — subscription profiling:** The per-attribute fix above is reactive and ad-hoc. The systematic fix is a **probe-based subscription profiler** (`prerequisites/profile-subscription.sh`) that runs BEFORE any Terraform deployment. It creates temporary test resources, observes what Azure policies modify or deny, and generates a `subscription-profile.auto.tfvars` with policy-compliant defaults that all modules consume. This eliminates the deploy→fail→patch→retry loop entirely.
+**Core principle:** A Terraform config that declares a state the platform will never allow is a **wrong config**, not a drift victim. When a Modify policy sets `allowSharedKeyAccess = false` on every storage account, the policy is not "drifting" infrastructure — it is defining the realized steady state. The Terraform config should declare `shared_access_key_enabled = false` because that IS what the platform enforces.
 
-Three approaches to the policy-IaC tension, from tactical to strategic:
-1. **Probe-based profiling** (what we built): Create throwaway resources, observe policy effects, generate compliant defaults. Works with ANY policy regardless of source (management group, subscription, inherited). No policy parsing required.
-2. **AZAPI pre-flight validation**: The `azapi` provider supports `enable_preflight = true` which validates planned resources against Azure Policy during `terraform plan`. Catches deny policies early but doesn't detect modify/append drift.
-3. **Policy-IaC coordination**: The enterprise pattern where platform teams publish "blessed module defaults" that match their policy definitions. Policy and IaC share a single source of truth — no runtime discovery needed.
+**When `ignore_changes` is appropriate vs when it hides a control-plane problem:**
+- ✅ **Non-semantic, platform-managed attributes**: `tags["rg-class"]` (Azure auto-classification tag that doesn't affect behavior), `enabled_metric` (Azure expanding `AllMetrics` into individual category names — a representation issue, not a config choice).
+- ❌ **Semantically meaningful attributes**: auth settings, network access, security posture. Using `ignore_changes` on these hides the fact that the IaC config is wrong — it declares a state that will never exist.
+
+**The three-layer operating model:**
+```
+Layer 3: Application IaC (Terraform modules)
+    ↑ consumes variables from
+Layer 2: Platform Contract (subscription-profile.auto.tfvars)
+    ↑ discovered by profiler / published by platform team
+Layer 1: Platform Policies (Azure Policy — Deny, Modify, DINE)
+    (owned by platform/security team, inherited from management groups)
+```
+
+- **Layer 1** defines what the platform enforces. IaC authors can't change it.
+- **Layer 2** translates Layer 1 into IaC-consumable variables. The profiler discovers this contract; ideally the platform team publishes it.
+- **Layer 3** consumes Layer 2 and declares the policy-enforced steady state. No `ignore_changes` needed for meaningful attributes because the config already matches what policy produces.
+
+**Policy assignment changes are platform contract changes.** When the platform team activates a new Modify or DINE policy, the platform contract (Layer 2) changes. This should be treated with the same rigor as an API breaking change: re-run the profiler, update IaC variables, verify zero-drift.
+
+**Rule:** Treat Azure Policy as a first-class input to the IaC operating model, not a surprise to patch after the fact. For mutating policy effects (Modify, Append, DINE), the Terraform config must directly model the policy-enforced steady state. Use `ignore_changes` ONLY for non-semantic attributes where the IaC author genuinely has no opinion. For everything else, the correct fix is to declare the value the platform enforces and source it from the platform contract.
+
+**What we built:**
+- `prerequisites/profile-subscription.sh` — discovers the platform contract by probing (read-only APIs + minimal probe resources). Generates `subscription-profile.auto.tfvars`.
+- All modules parameterize policy-sensitive attributes via variables that the profile can set.
+- `ignore_changes` survives only on `tags["rg-class"]` (non-semantic auto-tag) and `enabled_metric` (representational expansion, not a config choice).
