@@ -288,12 +288,10 @@ resource "azurerm_mssql_database" "serverless" {
 resource "azurerm_mssql_elasticpool" "main" {
   name                = "${var.prefix}-sql-pool-${random_string.suffix.result}"
   resource_group_name = azurerm_resource_group.databases.name
-  location            = azurerm_resource_group.databases.location
+  location            = local.sql_location
   server_name         = azurerm_mssql_server.main.name
   max_size_gb         = 4.8828125
   tags                = local.common_tags
-
-  # BasicPool: 50 eDTUs shared across databases in the pool.
   sku {
     name     = "BasicPool"
     tier     = "Basic"
@@ -513,10 +511,10 @@ resource "azurerm_mssql_elasticpool" "main" {
 resource "azurerm_cosmosdb_account" "main" {
   name                             = "${var.prefix}-cosmos-${random_string.suffix.result}"
   resource_group_name              = azurerm_resource_group.databases.name
-  location                         = azurerm_resource_group.databases.location
+  location                         = local.sql_location
   offer_type                       = "Standard"
   kind                             = "GlobalDocumentDB"
-  local_authentication_disabled    = true # MCAPS policy enforces Entra-only auth
+  local_authentication_disabled    = true
   tags                             = local.common_tags
 
   # Session consistency — the default and most commonly tested on AZ-305.
@@ -528,7 +526,7 @@ resource "azurerm_cosmosdb_account" "main" {
   # Single geo-location for cost savings. In production, add additional
   # geo_location blocks for multi-region replication (automatic failover).
   geo_location {
-    location          = azurerm_resource_group.databases.location
+    location          = local.sql_location
     failover_priority = 0
     zone_redundant    = false
   }
