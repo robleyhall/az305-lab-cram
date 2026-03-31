@@ -66,6 +66,10 @@ resource "azurerm_resource_group" "governance" {
   name     = "${var.prefix}-governance-rg"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================

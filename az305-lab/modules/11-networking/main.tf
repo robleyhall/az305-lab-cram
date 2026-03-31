@@ -66,6 +66,10 @@ resource "azurerm_resource_group" "networking" {
   name     = "${var.prefix}-networking-rg-${local.suffix}"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================

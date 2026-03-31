@@ -91,6 +91,10 @@ resource "azurerm_resource_group" "databases" {
   name     = "${var.prefix}-databases-rg-${random_string.suffix.result}"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================
@@ -505,12 +509,13 @@ resource "azurerm_mssql_elasticpool" "main" {
 # ---------------------------------------------------------------------------
 
 resource "azurerm_cosmosdb_account" "main" {
-  name                = "${var.prefix}-cosmos-${random_string.suffix.result}"
-  resource_group_name = azurerm_resource_group.databases.name
-  location            = azurerm_resource_group.databases.location
-  offer_type          = "Standard"
-  kind                = "GlobalDocumentDB"
-  tags                = local.common_tags
+  name                             = "${var.prefix}-cosmos-${random_string.suffix.result}"
+  resource_group_name              = azurerm_resource_group.databases.name
+  location                         = azurerm_resource_group.databases.location
+  offer_type                       = "Standard"
+  kind                             = "GlobalDocumentDB"
+  local_authentication_disabled    = true # MCAPS policy enforces Entra-only auth
+  tags                             = local.common_tags
 
   # Session consistency — the default and most commonly tested on AZ-305.
   # Provides read-your-writes guarantee within a session (client token).
@@ -630,6 +635,10 @@ resource "azurerm_monitor_diagnostic_setting" "sql_audit" {
     category = "AllMetrics"
   }
 
+  lifecycle {
+    ignore_changes = [enabled_metric]
+  }
+
   depends_on = [azurerm_mssql_server_extended_auditing_policy.main]
 }
 
@@ -651,6 +660,10 @@ resource "azurerm_monitor_diagnostic_setting" "cosmos" {
 
   enabled_metric {
     category = "AllMetrics"
+  }
+
+  lifecycle {
+    ignore_changes = [enabled_metric]
   }
 }
 

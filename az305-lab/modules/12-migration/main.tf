@@ -137,6 +137,10 @@ resource "azurerm_resource_group" "migration" {
   name     = "${var.prefix}-migration-rg"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================
@@ -338,6 +342,7 @@ resource "azurerm_storage_account" "migration_staging" {
     versioning_enabled = true
   }
 
+  allow_nested_items_to_be_public = false
   tags = local.common_tags
 }
 

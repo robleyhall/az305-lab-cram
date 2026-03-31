@@ -88,6 +88,10 @@ resource "azurerm_resource_group" "monitoring" {
   name     = "${var.prefix}-monitoring-rg"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================

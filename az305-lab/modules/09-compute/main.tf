@@ -97,6 +97,10 @@ resource "azurerm_resource_group" "compute" {
   name     = "${var.prefix}-compute-rg"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================
@@ -167,6 +171,7 @@ resource "azurerm_storage_account" "bootdiag" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
   shared_access_key_enabled = false
+  allow_nested_items_to_be_public = false
   tags                     = local.common_tags
 }
 
@@ -294,6 +299,9 @@ resource "azurerm_linux_web_app" "main" {
   service_plan_id     = azurerm_service_plan.webapp.id
   https_only          = true
   tags                = local.common_tags
+
+  ftp_publish_basic_authentication_enabled       = false
+  webdeploy_publish_basic_authentication_enabled = false
 
   identity {
     type = "SystemAssigned"
@@ -520,6 +528,7 @@ resource "azurerm_storage_account" "func" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
   shared_access_key_enabled = false
+  allow_nested_items_to_be_public = false
   tags                     = local.common_tags
 }
 
@@ -544,6 +553,10 @@ resource "azurerm_resource_group" "func" {
   name     = "${var.prefix}-func-rg"
   location = var.appservice_location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 resource "azurerm_service_plan" "func" {
@@ -565,6 +578,9 @@ resource "azurerm_linux_function_app" "main" {
   storage_account_name          = azurerm_storage_account.func.name
   storage_uses_managed_identity = true
   tags                          = local.common_tags
+
+  ftp_publish_basic_authentication_enabled       = false
+  webdeploy_publish_basic_authentication_enabled = false
 
   identity {
     type = "SystemAssigned"
@@ -655,6 +671,7 @@ resource "azurerm_storage_account" "batch" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
   shared_access_key_enabled = false
+  allow_nested_items_to_be_public = false
   tags                     = local.common_tags
 }
 

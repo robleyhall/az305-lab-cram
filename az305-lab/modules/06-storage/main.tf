@@ -302,6 +302,10 @@ resource "azurerm_resource_group" "storage" {
   name     = "${var.prefix}-storage-rg"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================
@@ -354,6 +358,7 @@ resource "azurerm_storage_account" "main" {
     bypass                     = ["AzureServices"]
   }
 
+  allow_nested_items_to_be_public = false
   tags = local.common_tags
 }
 
@@ -529,6 +534,7 @@ resource "azurerm_storage_account" "premium_blob" {
   https_traffic_only_enabled = true
   shared_access_key_enabled  = false
 
+  allow_nested_items_to_be_public = false
   tags = local.common_tags
 }
 
@@ -570,6 +576,7 @@ resource "azurerm_storage_account" "datalake" {
   https_traffic_only_enabled = true
   shared_access_key_enabled  = false
 
+  allow_nested_items_to_be_public = false
   tags = local.common_tags
 }# =============================================================================
 # MANAGED DISKS

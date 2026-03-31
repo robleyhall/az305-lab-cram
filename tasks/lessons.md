@@ -119,3 +119,23 @@
 **Fix:** Changed location to `centralus` and API version to `2020-05-01` (the latest supported version). Also had to register `Microsoft.Migrate` provider first.
 
 **Rule:** Azure Migrate has limited region support (no eastus) and uses older API versions. Check the error message for the list of supported regions and API versions. Always verify provider registration with `az provider show -n Microsoft.Migrate` before deploying.
+
+### Lesson 15: Azure subscription policies cause persistent Terraform drift — fix config, don't fight policies
+
+**What happened:** After deploying all 13 modules, `terraform plan` showed drift on every module. Three distinct patterns:
+1. **`rg-class = "user-managed"` tag** — Azure automatically adds this tag to resource groups. Terraform sees it as unmanaged and wants to remove it.
+2. **`allow_nested_items_to_be_public = false`** — subscription policy enforces this on storage accounts, but Terraform defaults to `true`.
+3. **`local_authentication_enabled = false`** — subscription policy disables local (key-based) auth on Event Hubs, Service Bus, and Cosmos DB. Terraform defaults to `true`.
+4. **`ftp_publish_basic_authentication_enabled` / `webdeploy_publish_basic_authentication_enabled`** — subscription policy disables these on App Service, Terraform defaults to `true`.
+5. **Diagnostic settings `enabled_metric`** — Azure expands `AllMetrics` into individual category names (e.g., `Requests`, `SLI`, `Basic`), causing perpetual diff.
+
+**Fix:**
+- RG tags: `lifecycle { ignore_changes = [tags["rg-class"]] }` on all resource groups
+- Storage: explicitly set `allow_nested_items_to_be_public = false`
+- Event Hubs: `local_authentication_enabled = false`
+- Service Bus: `local_auth_enabled = false`
+- Cosmos DB: `local_authentication_disabled = true`
+- App Service: `ftp_publish_basic_authentication_enabled = false`, `webdeploy_publish_basic_authentication_enabled = false`
+- Diagnostic settings: `lifecycle { ignore_changes = [enabled_metric] }`
+
+**Rule:** After deploying to a managed subscription, always run `terraform plan` and resolve all drift before considering deployment complete. Match Terraform config to subscription policy defaults — don't rely on Terraform defaults when policies override them. Use `lifecycle { ignore_changes }` for Azure-managed attributes that Terraform can't control (e.g., auto-added tags, metric category expansion).

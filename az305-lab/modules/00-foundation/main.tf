@@ -58,6 +58,10 @@ resource "azurerm_resource_group" "foundation" {
   name     = "${var.prefix}-foundation-rg-${random_string.suffix.result}"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # -----------------------------------------------------------------------------

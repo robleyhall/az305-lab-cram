@@ -67,6 +67,10 @@ resource "azurerm_resource_group" "main" {
   name     = "${var.prefix}-dataintegration-rg"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================

@@ -91,6 +91,10 @@ resource "azurerm_resource_group" "hadr" {
   name     = "${var.prefix}-hadr-rg-${local.suffix}"
   location = var.location
   tags     = local.common_tags
+
+  lifecycle {
+    ignore_changes = [tags["rg-class"]]
+  }
 }
 
 # =============================================================================
