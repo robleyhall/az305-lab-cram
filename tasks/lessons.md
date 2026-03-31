@@ -139,3 +139,10 @@
 - Diagnostic settings: `lifecycle { ignore_changes = [enabled_metric] }`
 
 **Rule:** After deploying to a managed subscription, always run `terraform plan` and resolve all drift before considering deployment complete. Match Terraform config to subscription policy defaults — don't rely on Terraform defaults when policies override them. Use `lifecycle { ignore_changes }` for Azure-managed attributes that Terraform can't control (e.g., auto-added tags, metric category expansion).
+
+**Better pattern — subscription profiling:** The per-attribute fix above is reactive and ad-hoc. The systematic fix is a **probe-based subscription profiler** (`prerequisites/profile-subscription.sh`) that runs BEFORE any Terraform deployment. It creates temporary test resources, observes what Azure policies modify or deny, and generates a `subscription-profile.auto.tfvars` with policy-compliant defaults that all modules consume. This eliminates the deploy→fail→patch→retry loop entirely.
+
+Three approaches to the policy-IaC tension, from tactical to strategic:
+1. **Probe-based profiling** (what we built): Create throwaway resources, observe policy effects, generate compliant defaults. Works with ANY policy regardless of source (management group, subscription, inherited). No policy parsing required.
+2. **AZAPI pre-flight validation**: The `azapi` provider supports `enable_preflight = true` which validates planned resources against Azure Policy during `terraform plan`. Catches deny policies early but doesn't detect modify/append drift.
+3. **Policy-IaC coordination**: The enterprise pattern where platform teams publish "blessed module defaults" that match their policy definitions. Policy and IaC share a single source of truth — no runtime discovery needed.
