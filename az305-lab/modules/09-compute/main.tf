@@ -173,6 +173,7 @@ resource "azurerm_storage_account" "bootdiag" {
   account_replication_type = "LRS"
   shared_access_key_enabled = false
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags                     = local.common_tags
 }
 
@@ -530,6 +531,7 @@ resource "azurerm_storage_account" "func" {
   account_replication_type = "LRS"
   shared_access_key_enabled = false
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags                     = local.common_tags
 }
 
@@ -674,6 +676,7 @@ resource "azurerm_storage_account" "batch" {
   account_replication_type = "LRS"
   shared_access_key_enabled = false
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags                     = local.common_tags
 }
 

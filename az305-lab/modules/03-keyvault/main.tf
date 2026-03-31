@@ -187,9 +187,11 @@ resource "azurerm_key_vault" "main" {
   soft_delete_retention_days = 7
 
   # Purge protection — disabled for easy lab teardown.
-  purge_protection_enabled = false
+  purge_protection_enabled      = false
+  public_network_access_enabled = false # Policy-enforced steady state
 
   # Network ACLs — defence in depth alongside the private endpoint.
+  # With public_network_access disabled, only private endpoint traffic is allowed.
   network_acls {
     default_action             = "Deny"
     bypass                     = "AzureServices"
@@ -277,7 +279,13 @@ resource "azurerm_role_assignment" "kv_crypto_user_identity" {
 #     or generate self-signed certs for testing.
 # ---------------------------------------------------------------------------
 
+# Data plane resources (secret, key, certificate) are created once and managed
+# via the Key Vault Portal/CLI. With public_network_access disabled by policy,
+# Terraform cannot refresh state from outside the private network.
+# Set deploy_kv_data_plane = true on first deployment, then false for subsequent plans.
+
 resource "azurerm_key_vault_secret" "db_connection_string" {
+  count        = var.deploy_kv_data_plane ? 1 : 0
   name         = "db-connection-string"
   value        = "Server=tcp:az305-lab-sql.database.windows.net,1433;Database=az305-lab-db;Authentication=Active Directory Managed Identity;"
   key_vault_id = azurerm_key_vault.main.id
@@ -308,6 +316,7 @@ resource "azurerm_key_vault_secret" "db_connection_string" {
 # ---------------------------------------------------------------------------
 
 resource "azurerm_key_vault_key" "encryption" {
+  count        = var.deploy_kv_data_plane ? 1 : 0
   name         = "az305-lab-encryption-key"
   key_vault_id = azurerm_key_vault.main.id
   key_type     = "RSA"
@@ -334,6 +343,7 @@ resource "azurerm_key_vault_key" "encryption" {
 # that Key Vault can auto-renew before expiry.
 
 resource "azurerm_key_vault_certificate" "tls_demo" {
+  count        = var.deploy_kv_data_plane ? 1 : 0
   name         = "az305-lab-tls-demo"
   key_vault_id = azurerm_key_vault.main.id
   tags         = local.common_tags

@@ -134,9 +134,7 @@ resource "azurerm_data_factory" "main" {
   # VNet. Managed private endpoints connect to PaaS services without public exposure.
   managed_virtual_network_enabled = true
 
-  # Public network access enabled for lab convenience. In production, disable
-  # and use private endpoints exclusively.
-  public_network_enabled = true
+  public_network_enabled = false # Policy-enforced steady state
 
   # System-assigned managed identity — used for RBAC-based auth to Data Lake,
   # Key Vault, and other Azure services. Eliminates stored credentials.
@@ -234,36 +232,34 @@ resource "azurerm_storage_account" "datalake" {
   # ABFSS driver, and efficient directory-level operations.
   is_hns_enabled = true
 
-  allow_nested_items_to_be_public = false
-  shared_access_key_enabled       = false
+  allow_nested_items_to_be_public  = false
+  shared_access_key_enabled        = false
+  public_network_access_enabled    = false # Policy-enforced steady state
 
   tags = local.common_tags
 }
 
 # --- Medallion Architecture Containers ---
+# Data plane resources: created once, managed via Portal/CLI.
+# With public_network_access disabled by policy, Terraform cannot refresh
+# these from outside the private network on subsequent plans.
 
 resource "azurerm_storage_data_lake_gen2_filesystem" "raw" {
+  count              = var.deploy_datalake_filesystems ? 1 : 0
   name               = "raw"
   storage_account_id = azurerm_storage_account.datalake.id
-
-  # Bronze layer: raw ingestion data, partitioned by source and date.
-  # Data Factory Copy activities land data here.
 }
 
 resource "azurerm_storage_data_lake_gen2_filesystem" "processed" {
+  count              = var.deploy_datalake_filesystems ? 1 : 0
   name               = "processed"
   storage_account_id = azurerm_storage_account.datalake.id
-
-  # Silver layer: cleaned, deduplicated, schema-enforced data.
-  # ADF Data Flows or Databricks notebooks transform raw → processed.
 }
 
 resource "azurerm_storage_data_lake_gen2_filesystem" "curated" {
+  count              = var.deploy_datalake_filesystems ? 1 : 0
   name               = "curated"
   storage_account_id = azurerm_storage_account.datalake.id
-
-  # Gold layer: business aggregates, KPIs, reporting-ready datasets.
-  # Consumed by Power BI, Synapse serverless SQL, or APIs.
 }
 
 # --- Data Lake Diagnostic Settings ---

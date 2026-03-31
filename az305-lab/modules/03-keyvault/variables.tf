@@ -43,3 +43,9 @@ variable "tags" {
     ManagedBy  = "Terraform"
   }
 }
+
+variable "deploy_kv_data_plane" {
+  type        = bool
+  default     = false
+  description = "Create Key Vault data plane objects (secret, key, certificate). Set true on initial deploy only. With public_network_access disabled by policy, Terraform cannot refresh these from outside the private network on subsequent plans."
+}

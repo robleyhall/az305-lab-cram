@@ -46,3 +46,9 @@ variable "tags" {
     ManagedBy  = "Terraform"
   }
 }
+
+variable "deploy_datalake_filesystems" {
+  type        = bool
+  default     = false
+  description = "Create Data Lake Gen2 file systems (raw/processed/curated). Set true on initial deploy only. With public_network_access disabled by policy, Terraform cannot refresh these from outside the private network."
+}

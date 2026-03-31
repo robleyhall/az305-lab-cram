@@ -347,6 +347,12 @@ resource "azurerm_public_ip" "lb" {
   domain_name_label   = "${var.prefix}-pub-lb-${local.suffix}"
 
   tags = local.common_tags
+
+  lifecycle {
+    # Non-semantic: Azure adds ip_tags for internal classification (e.g., FirstPartyUsage).
+    # This is a force-new attribute — ignoring prevents unnecessary resource replacement.
+    ignore_changes = [ip_tags]
+  }
 }
 
 resource "azurerm_lb" "public" {

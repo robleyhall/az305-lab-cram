@@ -360,6 +360,7 @@ resource "azurerm_storage_account" "main" {
   }
 
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags = local.common_tags
 }
 
@@ -536,6 +537,7 @@ resource "azurerm_storage_account" "premium_blob" {
   shared_access_key_enabled  = false
 
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags = local.common_tags
 }
 
@@ -578,6 +580,7 @@ resource "azurerm_storage_account" "datalake" {
   shared_access_key_enabled  = false
 
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags = local.common_tags
 }# =============================================================================
 # MANAGED DISKS

@@ -622,27 +622,19 @@ resource "azurerm_mssql_server_extended_auditing_policy" "main" {
 # ---------------------------------------------------------------------------
 
 # SQL Server audit logs → Log Analytics
-# Targets the master database to capture server-level audit events.
-resource "azurerm_monitor_diagnostic_setting" "sql_audit" {
-  name                       = "${var.prefix}-sql-audit-diag"
-  target_resource_id         = "${azurerm_mssql_server.main.id}/databases/master"
-  log_analytics_workspace_id = var.log_analytics_workspace_id
-
-  enabled_log {
-    category = "SQLSecurityAuditEvents"
-  }
-
-  enabled_metric {
-    category = "AllMetrics"
-  }
-
-  lifecycle {
-    # Non-semantic: Azure expands AllMetrics into individual category names. Representational, not config.
-    ignore_changes = [enabled_metric]
-  }
-
-  depends_on = [azurerm_mssql_server_extended_auditing_policy.main]
-}
+# Disabled: Defender for SQL auto-creates a diagnostic setting for SQLSecurityAuditEvents
+# on the master database. Creating a second setting for the same category and sink
+# causes a 409 Conflict. The Defender-managed setting is the policy-enforced steady state.
+# resource "azurerm_monitor_diagnostic_setting" "sql_audit" {
+#   name                       = "${var.prefix}-sql-audit-diag"
+#   target_resource_id         = "${azurerm_mssql_server.main.id}/databases/master"
+#   log_analytics_workspace_id = var.log_analytics_workspace_id
+#
+#   enabled_log { category = "SQLSecurityAuditEvents" }
+#   enabled_metric { category = "AllMetrics" }
+#
+#   depends_on = [azurerm_mssql_server_extended_auditing_policy.main]
+# }
 
 # Cosmos DB telemetry → Log Analytics
 # Captures data-plane requests and query performance metrics for

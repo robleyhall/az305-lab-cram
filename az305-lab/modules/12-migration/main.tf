@@ -344,6 +344,7 @@ resource "azurerm_storage_account" "migration_staging" {
   }
 
   allow_nested_items_to_be_public = false
+  public_network_access_enabled    = false # Policy-enforced steady state
   tags = local.common_tags
 }
 
