@@ -1,0 +1,35 @@
+# =============================================================================
+# AZ-305 Lab — Module 09: Compute Solutions — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# You MUST supply the foundation module outputs. Run Module 00 first, then
+# copy its output values here.
+# =============================================================================
+
+# Azure region — must match the foundation module's region.
+location = "eastus"
+
+# Naming prefix — must match what you used in Module 00.
+prefix = "certlab"
+
+# --- Values from Module 00 outputs ---
+# Run: cd ../00-foundation && terraform output
+
+# foundation_resource_group_name = "certlab-foundation-rg-abc123"
+# vnet_id                        = "/subscriptions/<sub-id>/resourceGroups/certlab-foundation-rg-abc123/providers/Microsoft.Network/virtualNetworks/certlab-vnet-abc123"
+# compute_subnet_id              = "/subscriptions/<sub-id>/resourceGroups/certlab-foundation-rg-abc123/providers/Microsoft.Network/virtualNetworks/certlab-vnet-abc123/subnets/compute"
+# log_analytics_workspace_id     = "/subscriptions/<sub-id>/resourceGroups/certlab-foundation-rg-abc123/providers/Microsoft.OperationalInsights/workspaces/certlab-law-abc123"
+
+# SSH public key for VM admin access (optional — auto-generated if empty).
+# To use your own key: ssh-keygen -t rsa -b 4096 -f ~/.ssh/az305-lab
+# admin_ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAA..."
+
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

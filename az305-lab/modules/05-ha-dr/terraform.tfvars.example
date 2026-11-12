@@ -1,0 +1,26 @@
+# =============================================================================
+# Module 05 — HA & Disaster Recovery: Example Variable Overrides
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+# All variables have sensible defaults — only override what you need.
+# =============================================================================
+
+# location = "eastus"
+# prefix   = "certlab"
+
+# --- Foundation module references ---
+# These should match the outputs from module 00-foundation.
+# foundation_resource_group_name = "certlab-foundation-rg-abc123"
+# vnet_id                        = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/certlab-vnet-abc123"
+# compute_subnet_id              = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/.../subnets/compute"
+# log_analytics_workspace_id     = "/subscriptions/.../resourceGroups/.../providers/Microsoft.OperationalInsights/workspaces/certlab-law-abc123"
+
+# --- VM Configuration ---
+# auto_shutdown_time = "2200"  # 10 PM UTC
+
+# --- Tags ---
+# tags = {
+#   Lab        = "AZ-305"
+#   CostCenter = "CertStudy"
+#   ManagedBy  = "Terraform"
+# }

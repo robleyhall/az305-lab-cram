@@ -1,0 +1,61 @@
+graph TB
+    %% Management Group hierarchy → Subscription → Resource Groups
+    MG["Management Group<br/>certlab-lab-mg"]
+    Sub["Subscription"]
+    RGFound["Resource Group<br/>certlab-foundation-rg"]
+    RGGov["Resource Group<br/>certlab-governance-rg"]
+
+    MG --> Sub
+    Sub --> RGFound
+    Sub --> RGGov
+
+    %% Policy Definitions
+    subgraph Policies["Custom Policy Definitions"]
+        P1["Require CostCenter Tag<br/>Effect: Deny"]
+        P2["Restrict VM SKUs<br/>Effect: Deny"]
+    end
+
+    %% Built-in Policy Assignments
+    subgraph Assignments["Policy Assignments"]
+        PA1["CostCenter Tag<br/>Mode: Audit"]
+        PA2["Allowed Locations<br/>eastus Only"]
+        PA3["Azure Security<br/>Benchmark"]
+    end
+
+    %% Custom RBAC
+    CustomRole["Custom RBAC Role<br/>certlab-lab-reader-plus"]
+
+    %% Resource Lock
+    Lock["Resource Lock<br/>CanNotDelete"]
+
+    %% Connections — Policy flow
+    P1 --> PA1
+    P2 -.->|available for assignment| Assignments
+
+    %% Assignments scoped to resource group
+    PA1 -.->|scoped to| RGGov
+    PA2 -.->|scoped to| RGGov
+    PA3 -.->|scoped to| RGGov
+
+    %% RBAC at subscription level
+    CustomRole -.->|"assignable at"| Sub
+
+    %% Lock on resource group
+    Lock -.->|applied to| RGGov
+
+    %% Styles
+    classDef mgmt fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef sub fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef rg fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef policy fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef assign fill:#ca8a04,color:#fff,stroke:#a16207
+    classDef rbac fill:#16a34a,color:#fff,stroke:#15803d
+    classDef lock fill:#dc2626,color:#fff,stroke:#b91c1c
+
+    class MG mgmt
+    class Sub sub
+    class RGFound,RGGov rg
+    class P1,P2 policy
+    class PA1,PA2,PA3 assign
+    class CustomRole rbac
+    class Lock lock

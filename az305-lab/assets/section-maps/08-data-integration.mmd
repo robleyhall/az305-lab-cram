@@ -1,0 +1,57 @@
+graph TB
+    %% Data Factory
+    subgraph ADF["Azure Data Factory · Managed VNet"]
+        Factory["Data Factory<br/>certlab-adf"]
+        LinkedSvc["Linked Service<br/>ls-datalake<br/>Managed Identity Auth"]
+        PipelineDef["Pipeline<br/>sample-copy-pipeline"]
+        Activity["Copy Activity"]
+    end
+
+    Factory --> LinkedSvc
+    Factory --> PipelineDef
+    PipelineDef --> Activity
+
+    %% Data Lake medallion architecture
+    subgraph DataLake["ADLS Gen2 · Medallion Architecture"]
+        Bronze["Bronze Layer<br/>raw/"]
+        Silver["Silver Layer<br/>processed/"]
+        Gold["Gold Layer<br/>curated/"]
+    end
+
+    Bronze --> Silver
+    Silver --> Gold
+
+    %% Activity reads/writes data lake
+    Activity -->|"read source"| Bronze
+    Activity -->|"write target"| Silver
+
+    %% Event Grid trigger
+    EGTopic["Event Grid<br/>System Topic<br/>BlobCreated Events"]
+
+    EGTopic -.->|"trigger on<br/>new blob"| PipelineDef
+
+    %% IAM
+    IAM["Role Assignment<br/>ADF → Storage Blob<br/>Data Contributor"]
+
+    Factory --> IAM
+    IAM --> DataLake
+
+    %% Diagnostics
+    LAW["Log Analytics<br/>Workspace"]
+
+    Factory -.->|"pipeline logs"| LAW
+    DataLake -.->|"storage logs"| LAW
+    EGTopic -.->|"event logs"| LAW
+
+    %% Styles
+    classDef adf fill:#ca8a04,color:#fff,stroke:#a16207
+    classDef lake fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef event fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef iam fill:#16a34a,color:#fff,stroke:#15803d
+    classDef diag fill:#64748b,color:#fff,stroke:#475569
+
+    class Factory,LinkedSvc,PipelineDef,Activity adf
+    class Bronze,Silver,Gold lake
+    class EGTopic event
+    class IAM iam
+    class LAW diag

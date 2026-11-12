@@ -1,0 +1,50 @@
+# =============================================================================
+# AZ-305 Lab — Module 11: Networking — Example Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# You MUST supply the foundation module outputs. Run Module 00 first, then
+# copy its output values here or use a data source / remote state.
+# =============================================================================
+
+# Azure region — must match the foundation module's region.
+location = "eastus"
+
+# Naming prefix — must match what you used in Module 00.
+prefix = "certlab"
+
+# --- Values from Module 00 outputs (run `terraform output` in 00-foundation) ---
+
+# foundation_resource_group_name = "certlab-foundation-rg-abc123"
+# foundation_vnet_id             = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/certlab-vnet-abc123"
+# foundation_vnet_name           = "certlab-vnet-abc123"
+# gateway_subnet_id              = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/.../subnets/GatewaySubnet"
+# bastion_subnet_id              = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/.../subnets/AzureBastionSubnet"
+# log_analytics_workspace_id     = "/subscriptions/.../resourceGroups/.../providers/Microsoft.OperationalInsights/workspaces/certlab-law-abc123"
+
+# Restrict SSH access to your public IP (recommended).
+# Find your IP: curl https://api.ipify.org
+# allowed_ssh_ip = "203.0.113.50/32"
+
+# --- Optional Expensive Resources ---
+# WARNING: These resources incur significant daily costs!
+# Only enable when actively studying the relevant exam topics.
+
+# Azure Firewall — ~$30/day (Standard SKU)
+# deploy_firewall = true
+
+# VPN Gateway — ~$3/day (VpnGw1 SKU, takes 30–45 min to deploy)
+# deploy_vpn_gateway = true
+
+# Azure Bastion — ~$5/day (Basic SKU)
+# deploy_bastion = true
+
+# Tags — override or extend the defaults.
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

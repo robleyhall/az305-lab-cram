@@ -1,0 +1,78 @@
+graph TB
+    %% Hub-Spoke Topology
+    subgraph Hub["Hub VNet · Foundation · 10.0.0.0/16"]
+        HubSubnets["14 Module Subnets"]
+        DefaultNSG["Default NSG"]
+        GWSub["GatewaySubnet"]
+        BastionSub["AzureBastionSubnet"]
+    end
+
+    subgraph Spoke["Spoke VNet · Secondary · 10.1.0.0/16"]
+        WorkloadSub["Workload Subnet"]
+        WebNSG["Web NSG<br/>HTTP / HTTPS / SSH"]
+        ASG["Application<br/>Security Group"]
+    end
+
+    %% Peering
+    Hub <-->|"VNet Peering<br/>Bidirectional"| Spoke
+
+    %% Route Table
+    UDR["Route Table<br/>Custom UDR"]
+    UDR --> WorkloadSub
+
+    %% Private DNS
+    subgraph DNS["Private DNS"]
+        PDZ["Private DNS Zone<br/>certlab-lab.example"]
+        ARecord["A Record<br/>webapp → 10.0.10.10"]
+    end
+
+    PDZ --> ARecord
+    PDZ -.->|"VNet Link"| Hub
+    PDZ -.->|"VNet Link"| Spoke
+
+    %% Optional Expensive Resources
+    subgraph Optional["Optional · Cost-Gated"]
+        Firewall["Azure Firewall<br/>~$30/day"]
+        FWPolicy["Firewall Policy"]
+        VPNGw["VPN Gateway<br/>~$3/day"]
+        Bastion["Bastion Host<br/>~$5/day"]
+    end
+
+    FWPolicy --> Firewall
+    Firewall --> Hub
+    VPNGw --> GWSub
+    Bastion --> BastionSub
+
+    %% NSG flow
+    WebNSG --> WorkloadSub
+    DefaultNSG --> HubSubnets
+
+    %% On-Premises
+    OnPrem["On-Premises<br/>Network"]
+    OnPrem -.->|"S2S VPN"| VPNGw
+
+    %% Diagnostics
+    LAW["Log Analytics"]
+    WebNSG -.->|"NSG flow logs"| LAW
+
+    %% Public IP
+    PIP["Public IP<br/>Standard · Static<br/>Zone-Redundant"]
+    PIP --> Firewall
+
+    %% Styles
+    classDef hub fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef spoke fill:#059669,color:#fff,stroke:#047857
+    classDef nsg fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef dns fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef optional fill:#ca8a04,color:#fff,stroke:#a16207
+    classDef external fill:#64748b,color:#fff,stroke:#475569
+    classDef route fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef diag fill:#0891b2,color:#fff,stroke:#0e7490
+
+    class HubSubnets,DefaultNSG,GWSub,BastionSub hub
+    class WorkloadSub,WebNSG,ASG spoke
+    class UDR route
+    class PDZ,ARecord dns
+    class Firewall,FWPolicy,VPNGw,Bastion optional
+    class OnPrem,PIP external
+    class LAW diag

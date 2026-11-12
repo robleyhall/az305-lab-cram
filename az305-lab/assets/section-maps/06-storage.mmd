@@ -1,0 +1,59 @@
+graph TB
+    %% Storage Accounts
+    subgraph GPv2["GPv2 Storage · GRS"]
+        Blob["Blob Service<br/>containers: documents,<br/>public-assets"]
+        Files["File Share<br/>certlab-fileshare · 5 GB"]
+        Lifecycle["Lifecycle Policy<br/>Hot → Cool → Archive → Delete"]
+    end
+
+    subgraph Premium["Premium Block Blob · LRS"]
+        PremBlob["High-Performance<br/>Blob Storage"]
+    end
+
+    subgraph DataLake["Data Lake Gen2 · HNS"]
+        HNS["Hierarchical<br/>Namespace"]
+    end
+
+    %% Managed Disks
+    subgraph Disks["Managed Disks"]
+        StdDisk["Standard HDD<br/>32 GB · LRS"]
+        PremDisk["Premium SSD<br/>32 GB · P4"]
+    end
+
+    %% Private Endpoint
+    PE["Private Endpoint<br/>certlab-storage-pe"]
+    PDZ["Private DNS Zone<br/>privatelink.blob.core.windows.net"]
+
+    %% Network
+    VNet["Foundation VNet<br/>Storage Subnet"]
+
+    %% Diagnostics
+    LAW["Log Analytics<br/>Workspace"]
+
+    %% Connections
+    Blob --> Lifecycle
+
+    %% Private endpoint to GPv2
+    PE --> GPv2
+    PE --- PDZ
+    PDZ --> VNet
+
+    %% Diagnostics
+    GPv2 -.->|"metrics & logs"| LAW
+    Premium -.->|"metrics & logs"| LAW
+    DataLake -.->|"metrics & logs"| LAW
+
+    %% Styles
+    classDef gpv2 fill:#16a34a,color:#fff,stroke:#15803d
+    classDef premium fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef datalake fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef disk fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef network fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef diag fill:#64748b,color:#fff,stroke:#475569
+
+    class Blob,Files,Lifecycle gpv2
+    class PremBlob premium
+    class HNS datalake
+    class StdDisk,PremDisk disk
+    class PE,PDZ,VNet network
+    class LAW diag

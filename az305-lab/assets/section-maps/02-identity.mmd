@@ -1,0 +1,66 @@
+graph TB
+    %% Entra ID Tenant
+    Tenant["Entra ID Tenant"]
+
+    %% Groups
+    subgraph Groups["Security Groups"]
+        GrpAdmins["certlab-admins"]
+        GrpDevs["certlab-developers"]
+        GrpReaders["certlab-readers"]
+    end
+
+    %% Application
+    subgraph AppIdentity["Application Identity"]
+        AppReg["App Registration"]
+        SP["Service Principal"]
+        ManagedId["User-Assigned<br/>Managed Identity"]
+    end
+
+    %% Conditional Access
+    CA["Conditional Access<br/>Policy: MFA for Admins"]
+
+    %% Role Assignments
+    subgraph RoleAssign["Role Assignments"]
+        RA1["Reader<br/>→ certlab-readers"]
+        RA2["Contributor<br/>→ certlab-developers"]
+    end
+
+    %% Azure Resources
+    RG["Resource Group<br/>certlab-identity-rg"]
+    LAW["Log Analytics<br/>Workspace"]
+
+    %% Connections
+    Tenant --> Groups
+    Tenant --> AppIdentity
+    Tenant --> CA
+
+    GrpAdmins --> CA
+
+    AppReg --> SP
+
+    %% Role assignments target RG
+    GrpReaders --> RA1
+    GrpDevs --> RA2
+    RA1 --> RG
+    RA2 --> RG
+
+    %% Managed Identity used by other modules
+    ManagedId -.->|"used by other<br/>modules (e.g. KV)"| RG
+
+    %% Diagnostic settings
+    Tenant -.->|"Entra ID audit logs"| LAW
+
+    %% Styles
+    classDef tenant fill:#db2777,color:#fff,stroke:#be185d
+    classDef group fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef app fill:#ea580c,color:#fff,stroke:#c2410c
+    classDef role fill:#16a34a,color:#fff,stroke:#15803d
+    classDef resource fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef ca fill:#dc2626,color:#fff,stroke:#b91c1c
+
+    class Tenant tenant
+    class GrpAdmins,GrpDevs,GrpReaders group
+    class AppReg,SP,ManagedId app
+    class RA1,RA2 role
+    class RG,LAW resource
+    class CA ca

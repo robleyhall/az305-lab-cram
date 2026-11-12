@@ -1,0 +1,31 @@
+# =============================================================================
+# AZ-305 Lab — Module 03: Key Vault & Application Identity — Example Values
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# You MUST supply the foundation module outputs. Run Module 00 first, then
+# copy its output values here or use a data source / remote state.
+# =============================================================================
+
+# Azure region — must match the foundation module's region.
+location = "eastus"
+
+# Naming prefix — must match what you used in Module 00.
+prefix = "certlab"
+
+# --- Values from Module 00 outputs (run `terraform output` in 00-foundation) ---
+
+# foundation_resource_group_name = "certlab-foundation-rg-abc123"
+# vnet_id                        = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/certlab-vnet-abc123"
+# keyvault_subnet_id             = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/.../subnets/keyvault"
+# log_analytics_workspace_id     = "/subscriptions/.../resourceGroups/.../providers/Microsoft.OperationalInsights/workspaces/certlab-law-abc123"
+
+# Tags — override or extend the defaults.
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+  Owner      = "yourname@example.com"
+}

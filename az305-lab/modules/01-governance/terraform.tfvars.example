@@ -1,0 +1,20 @@
+# =============================================================================
+# AZ-305 Lab — Module 01: Governance & Compliance — Example Variables
+# =============================================================================
+# Copy this file to terraform.tfvars and adjust values for your environment.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+# =============================================================================
+
+location = "eastus"
+prefix   = "certlab"
+
+# Required: provide the resource group name output by module 00-foundation.
+# Run `terraform -chdir=../00-foundation output resource_group_name` to get it.
+foundation_resource_group_name = "certlab-foundation-rg-abc123"
+
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+}

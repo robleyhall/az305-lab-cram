@@ -1,0 +1,69 @@
+graph TB
+    %% Availability Set
+    subgraph AVSet["Availability Set · 2 FD / 5 UD"]
+        VM1["VM-0<br/>Fault Domain 0"]
+        VM2["VM-1<br/>Fault Domain 1"]
+    end
+
+    %% Availability Zone VM
+    AZVM["VM (Zone 1)<br/>Availability Zone"]
+
+    %% Load Balancers
+    subgraph LoadBalancing["Load Balancing"]
+        PubLB["Public LB<br/>Standard · Zone-Redundant"]
+        IntLB["Internal LB<br/>Standard · Private Frontend"]
+    end
+
+    %% Health Probes
+    HP["Health Probe<br/>HTTP :80"]
+
+    %% Traffic Manager
+    TM["Traffic Manager<br/>Performance Routing"]
+
+    %% Disaster Recovery
+    subgraph DR["Disaster Recovery"]
+        RSV["Recovery Services Vault<br/>GRS · Soft Delete"]
+        BackupPolicy["Backup Policy<br/>Daily"]
+    end
+
+    %% VNet
+    VNet["Foundation VNet<br/>Compute Subnet"]
+
+    %% Internet / Users
+    Users["Users / Internet"]
+
+    %% Connections
+    Users --> TM
+    TM --> PubLB
+    PubLB --> HP
+    HP --> VM1
+    HP --> VM2
+    HP --> AZVM
+
+    IntLB --> VM1
+    IntLB --> VM2
+
+    VNet --> VM1
+    VNet --> VM2
+    VNet --> AZVM
+
+    %% Backup
+    RSV --> BackupPolicy
+    BackupPolicy -.->|"daily backup"| VM1
+    BackupPolicy -.->|"daily backup"| VM2
+
+    %% Styles
+    classDef vm fill:#dc2626,color:#fff,stroke:#b91c1c
+    classDef lb fill:#2563eb,color:#fff,stroke:#1d4ed8
+    classDef dr fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef net fill:#059669,color:#fff,stroke:#047857
+    classDef user fill:#64748b,color:#fff,stroke:#475569
+    classDef probe fill:#ca8a04,color:#fff,stroke:#a16207
+
+    class VM1,VM2,AZVM vm
+    class PubLB,IntLB lb
+    class TM lb
+    class RSV,BackupPolicy dr
+    class VNet net
+    class Users user
+    class HP probe

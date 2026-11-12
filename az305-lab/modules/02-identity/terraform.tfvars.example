@@ -1,0 +1,31 @@
+# =============================================================================
+# AZ-305 Lab — Module 02: Identity & Access — Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in the values from your
+# foundation module deployment:
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# Then run:
+#   cd ../00-foundation && terraform output
+# to get the values you need.
+# =============================================================================
+
+location = "eastus"
+prefix   = "certlab"
+
+# From foundation module: terraform output -raw resource_group_name
+foundation_resource_group_name = "certlab-foundation-rg-XXXXXX"
+
+# From foundation module: terraform output -raw log_analytics_workspace_id
+log_analytics_workspace_id = "/subscriptions/SUBSCRIPTION_ID/resourceGroups/certlab-foundation-rg-XXXXXX/providers/Microsoft.OperationalInsights/workspaces/certlab-law-XXXXXX"
+
+# Set to true ONLY if your Entra ID tenant has P1 or P2 licensing.
+# Free tenants will get a deployment error on the Conditional Access resource.
+enable_conditional_access = false
+
+tags = {
+  Lab        = "AZ-305"
+  CostCenter = "CertStudy"
+  ManagedBy  = "Terraform"
+}

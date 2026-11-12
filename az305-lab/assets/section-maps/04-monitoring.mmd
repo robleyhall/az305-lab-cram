@@ -1,0 +1,51 @@
+graph TB
+    %% Central monitoring
+    LAW["Log Analytics<br/>Workspace"]
+
+    subgraph Sources["Resource Logs & Metrics"]
+        ResLogs["Diagnostic Settings<br/>from All Modules"]
+        ActLog["Subscription<br/>Activity Log"]
+    end
+
+    subgraph Monitor["Azure Monitor"]
+        AppIns["Application Insights<br/>Workspace-Based"]
+        MetricAlert["Metric Alert<br/>VM CPU > 80%"]
+        ActivityAlert["Activity Log Alert<br/>Admin Delete Operations"]
+        LogAlert["Scheduled Query Rule<br/>KQL Error Alert"]
+    end
+
+    subgraph Actions["Response"]
+        AG["Action Group<br/>Email Notification"]
+        Dashboard["Portal Dashboard<br/>Overview Metrics"]
+    end
+
+    %% Data flow into Log Analytics
+    ResLogs -->|"logs & metrics"| LAW
+    ActLog -->|"activity events"| LAW
+
+    %% App Insights linked to LAW
+    AppIns -->|"traces & telemetry"| LAW
+
+    %% Alerts query data from LAW
+    LAW --> MetricAlert
+    LAW --> ActivityAlert
+    LAW --> LogAlert
+
+    %% Alerts trigger action group
+    MetricAlert --> AG
+    ActivityAlert --> AG
+    LogAlert --> AG
+
+    %% Dashboard reads from LAW
+    LAW --> Dashboard
+
+    %% Styles
+    classDef law fill:#0891b2,color:#fff,stroke:#0e7490
+    classDef source fill:#16a34a,color:#fff,stroke:#15803d
+    classDef monitor fill:#7c3aed,color:#fff,stroke:#6d28d9
+    classDef action fill:#ea580c,color:#fff,stroke:#c2410c
+
+    class LAW law
+    class ResLogs,ActLog source
+    class AppIns,MetricAlert,ActivityAlert,LogAlert monitor
+    class AG,Dashboard action
